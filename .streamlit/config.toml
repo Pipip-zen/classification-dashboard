@@ -1,0 +1,16 @@
+[theme]
+# Tema Taktis Militer Modern
+primaryColor = "#00E5FF"              # Cyan Neon Taktis untuk tombol aktif & slider
+backgroundColor = "#0A0E17"           # Latar belakang gelap pekat (Stealth Radar)
+secondaryBackgroundColor = "#131C2E"  # Warna Sidebar dan Card Container
+textColor = "#E2E8F0"                 # Teks kontras tinggi yang nyaman dibaca
+font = "sans serif"
+
+[server]
+headless = true
+enableCORS = false
+enableXsrfProtection = false
+
+[browser]
+gatherUsageStats = false
+
