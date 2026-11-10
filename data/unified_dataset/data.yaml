@@ -1,0 +1,15 @@
+path: D:/Pelajaran/Kuliah/SMT 5/Workshop Kecerdasan Buatan/Projek/data/unified_dataset
+train: train/images
+val: valid/images
+test: test/images
+nc: 9
+names:
+  0: soldier
+  1: military_vehicle
+  2: civilian
+  3: ship
+  4: submarine
+  5: marine_life
+  6: coral_reef
+  7: rov
+  8: fpv_drone

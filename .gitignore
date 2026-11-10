@@ -1,0 +1,40 @@
+# Python & Environment
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.venv/
+*.env
+
+# DATASETS (PENTING: Jangan push ribuan gambar & label ke GitHub)
+data/**/images/
+data/**/labels/
+*.cache
+data/*.zip
+data/*.tar.gz
+!data/.gitkeep
+!data/unified_dataset/data.yaml
+
+# MODEL WEIGHTS & TRAINING RUNS
+*.pt
+*.pth
+*.onnx
+*.engine
+models/*
+!models/.gitkeep
+
+# TRAINING OUTPUTS & LOGS (YOLO runs)
+runs/
+wandb/
+*.log
+
+# CACHE & TEMPORARY FILES
+.ipynb_checkpoints/
+*.tmp
+testbench_samples/videos/*.mp4
+testbench_samples/videos/*.avi
+
+# OS generated
+.DS_Store
+Thumbs.db
