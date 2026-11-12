@@ -13,6 +13,41 @@ from PIL import Image
 
 st.set_page_config(page_title="Dataset Helper", page_icon="📦", layout="wide")
 
+def render_tactical_table(df: pd.DataFrame):
+    """Render tabel taktis bebas error PyArrow/NumPy."""
+    html_table = df.to_html(classes="tactical-table", index=False)
+    st.markdown(f"""
+    <style>
+        .tactical-table {{
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            margin-bottom: 15px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: #E2E8F0;
+        }}
+        .tactical-table th {{
+            background-color: #1E293B;
+            color: #00E5FF;
+            border: 1px solid #334155;
+            padding: 8px 12px;
+            text-align: left;
+            text-transform: uppercase;
+            font-weight: bold;
+        }}
+        .tactical-table td {{
+            border: 1px solid #1E293B;
+            padding: 8px 12px;
+            background-color: rgba(15, 23, 42, 0.7);
+        }}
+        .tactical-table tr:hover td {{
+            background-color: rgba(30, 41, 59, 0.8);
+        }}
+    </style>
+    {html_table}
+    """, unsafe_allow_html=True)
+
 st.title("📦 Pusat Manajemen Dataset & Training AI")
 st.caption("Pemeriksaan visual data terpadu hasil penggabungan 6 dataset Roboflow")
 
@@ -48,7 +83,7 @@ with tab_dist:
     df_classes = pd.DataFrame([
         {"Class ID": cid, "Nama Kelas": name} for cid, name in classes.items()
     ])
-    st.dataframe(df_classes, use_container_width=True)
+    render_tactical_table(df_classes)
 
 with tab_inspect:
     st.subheader("Lihat Contoh Sampel Gambar dari Dataset Terpadu")
@@ -68,7 +103,7 @@ with tab_inspect:
 
 with tab_train:
     st.subheader("Pelatihan Model YOLOv8 (Transfer Learning)")
-    st.info("💡 Model akan dilatih menggunakan bobot dasar pre-trained `yolov8n.pt` dan disesuaikan ke 9 kelas taksonomi terpadu.")
+    st.info("💡 Model dilatih menggunakan bobot dasar pre-trained `yolov8n.pt` dan disesuaikan ke 9 kelas taksonomi terpadu.")
 
     t_col1, t_col2 = st.columns(2)
     with t_col1:
@@ -88,4 +123,3 @@ with tab_train:
         st.success(f"✅ Bobot model terbaik (`best.pt`) sudah tersedia di folder `models/`!")
     else:
         st.warning("Bobot `models/best.pt` belum terbentuk. Jalankan `python scripts/train_yolo.py` di terminal untuk memulai proses training.")
-

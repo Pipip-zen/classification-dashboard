@@ -21,6 +21,41 @@ from core.detector import TacticalDetector
 
 st.set_page_config(page_title="Media Analysis", page_icon="🎞️", layout="wide")
 
+def render_tactical_table(df: pd.DataFrame):
+    """Render tabel taktis bebas error PyArrow/NumPy."""
+    html_table = df.to_html(classes="tactical-table", index=False)
+    st.markdown(f"""
+    <style>
+        .tactical-table {{
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            margin-bottom: 15px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: #E2E8F0;
+        }}
+        .tactical-table th {{
+            background-color: #1E293B;
+            color: #00E5FF;
+            border: 1px solid #334155;
+            padding: 8px 12px;
+            text-align: left;
+            text-transform: uppercase;
+            font-weight: bold;
+        }}
+        .tactical-table td {{
+            border: 1px solid #1E293B;
+            padding: 8px 12px;
+            background-color: rgba(15, 23, 42, 0.7);
+        }}
+        .tactical-table tr:hover td {{
+            background-color: rgba(30, 41, 59, 0.8);
+        }}
+    </style>
+    {html_table}
+    """, unsafe_allow_html=True)
+
 st.title("🎞️ Analisis Media Visual Taktis (Foto & Video MP4)")
 st.caption("Pemeriksaan Intelijen & Rekapitulasi Misi ROV Danau vs Drone Spectator")
 
@@ -116,7 +151,7 @@ with tab_img:
                     })
 
                 df_log = pd.DataFrame(log_data)
-                st.dataframe(df_log[["Target", "Confidence Score", "Status Ancaman", "Keterangan"]], use_container_width=True)
+                render_tactical_table(df_log[["Target", "Confidence Score", "Status Ancaman", "Keterangan"]])
 
                 csv_bytes = df_log.to_csv(index=False).encode("utf-8")
                 st.download_button(
@@ -176,7 +211,7 @@ with tab_video:
 
             if video_logs:
                 df_vlog = pd.DataFrame(video_logs)
-                st.dataframe(df_vlog, use_container_width=True)
+                render_tactical_table(df_vlog)
                 st.download_button(
                     label="📥 Unduh Rekap Klasifikasi Video (CSV)",
                     data=df_vlog.to_csv(index=False).encode("utf-8"),
