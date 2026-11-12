@@ -5,12 +5,14 @@ Deskripsi:
     - Screen Mirroring (Window Picker aplikasi ROV/Drone)
     - Virtual Testbench (Simulasi video offline untuk pengujian mingguan tanpa hardware berat)
     - Direct USB Camera / RTSP
+    - Jembatan Keyframe Patroli untuk Image Stitching
 """
 
 import time
 import cv2
 import numpy as np
 import streamlit as st
+from datetime import datetime
 from pathlib import Path
 
 try:
@@ -28,7 +30,11 @@ st.set_page_config(page_title="Live Surveillance", page_icon="🛰️", layout="
 st.title("🛰️ Live Tactical Surveillance & Reconnaissance")
 st.caption("Monitoring Live Feed ROV Bawah Air & Drone FPV Darat / Virtual Testbench")
 
-# Setup Detector di Session State agar tidak reload berulang kali
+# Setup Buffer Keyframe untuk Stitching
+if "patrol_keyframes" not in st.session_state:
+    st.session_state.patrol_keyframes = []
+
+# Setup Detector di Session State
 if "detector" not in st.session_state:
     models_dir = Path("models")
     best_model = models_dir / "best.pt"
@@ -59,6 +65,14 @@ with st.sidebar:
     )
     detector.distance_estimator.set_camera_profile(camera_opt)
 
+    st.divider()
+    st.subheader("🗺️ Keyframe Panorama")
+    auto_capture_keyframe = st.checkbox("Auto-Capture tiap 2.5 detik", value=False)
+    st.caption(f"Buffer saat ini: **{len(st.session_state.patrol_keyframes)} frame tersimpan**")
+    if st.button("🗑️ Reset Buffer Keyframe"):
+        st.session_state.patrol_keyframes = []
+        st.success("Buffer dikosongkan.")
+
 # Layout Utama
 col_video, col_telemetry = st.columns([3, 1])
 
@@ -79,20 +93,11 @@ is_active = False
 if feed_mode == "Virtual Testbench (Simulasi Offline)":
     st.info("💡 **Mode Testbench Mingguan:** Memutar rekaman video patroli secara otomatis (*infinite loop*) untuk pengujian tanpa membawa ROV/drone fisik.")
     
-    # Deteksi video sampel di testbench_samples/videos/
     video_dir = Path("testbench_samples/videos")
     available_videos = list(video_dir.glob("*.mp4")) + list(video_dir.glob("*.avi"))
 
     if not available_videos:
-        st.warning("Belum ada video di folder `testbench_samples/videos/`. Silakan letakkan rekaman MP4 Anda di sana, atau gunakan menu upload di halaman Media Analysis.")
-        uploaded_tb = st.file_uploader("Atau unggah video simulasi di sini:", type=["mp4", "avi"])
-        if uploaded_tb:
-            temp_path = video_dir / uploaded_tb.name
-            video_dir.mkdir(parents=True, exist_ok=True)
-            with open(temp_path, "wb") as f:
-                f.write(uploaded_tb.read())
-            st.success("Video berhasil diunggah! Merefresh...")
-            st.rerun()
+        st.warning("Belum ada video di folder `testbench_samples/videos/`.")
     else:
         sel_video = st.selectbox("Pilih Skenario Video Uji:", available_videos, format_func=lambda p: p.name)
         start_btn = st.button("▶️ Mulai Streaming Simulasi", type="primary")
@@ -130,6 +135,9 @@ elif feed_mode == "Direct Camera / RTSP":
 if is_active:
     stop_btn = st.button("⏹️ Hentikan Stream")
     prev_time = time.time()
+    last_capture_time = time.time()
+    snapshots_dir = Path("testbench_samples/patrol_snapshots")
+    snapshots_dir.mkdir(parents=True, exist_ok=True)
 
     while not stop_btn:
         if feed_mode == "Virtual Testbench (Simulasi Offline)":
@@ -148,6 +156,15 @@ if is_active:
 
         if not ret or frame is None:
             break
+
+        # Auto-Capture Keyframe untuk Stitching
+        current_now = time.time()
+        if auto_capture_keyframe and (current_now - last_capture_time >= 2.5):
+            st.session_state.patrol_keyframes.append(frame.copy())
+            last_capture_time = current_now
+            # Simpan file snapshot ke disk
+            snap_path = snapshots_dir / f"patrol_{datetime.now().strftime('%H%M%S_%f')[:10]}.jpg"
+            cv2.imwrite(str(snap_path), frame)
 
         # AI Detection & Threat Evaluation
         results = detector.detect(frame, enable_distance=enable_dist)
@@ -175,4 +192,3 @@ if is_active:
         time.sleep(0.01)
 
     stream_cap.release()
-
