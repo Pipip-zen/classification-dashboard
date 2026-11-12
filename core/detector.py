@@ -4,8 +4,11 @@ Deskripsi:
     Engine deteksi objek & klasifikasi taktis menggunakan Ultralytics YOLOv8 / YOLO11.
     FOKUS MURNI IMAGE CLASSIFICATION & OBJECT DETECTION:
     - Mode ROV (Danau & Bawah Air: Kapal Selam, Biota, Karang, ROV, Kapal)
-    - Mode Drone (Spectator Udara: Pembedaan Cerdas Prajurit Tim A, Tim B, dan Warga Sipil)
-    - Filter Khusus Kendaraan Tempur: Mengeliminasi false positive pada bongkahan besi/bebatuan.
+    - Mode Drone (POV Umum):
+        * Orang -> Pembedaan Warna Baju: Tim A (Biru) vs Tim B (Ungu) vs Sipil (Lainnya)
+        * Kendaraan / Vehicle (Kendaraan umum dengan filter anti-besi/bebatuan)
+        * Perahu / Kapal Danau
+        * Drone FPV
 """
 
 import cv2
@@ -60,8 +63,9 @@ class TacticalDetector:
         draw_hud_reticle: bool = True
     ) -> Dict[str, Any]:
         """
-        Melakukan inferensi taktis berfokus murni pada Image Classification & Localization
-        dengan filter anti-false-positive pada kendaraan tempur dan pembeda sipil vs tentara.
+        Melakukan inferensi taktis berfokus murni pada Image Classification & Localization:
+        - mode='rov': Menampilkan target danau/bawah air (Submarine, Ikan, Karang, ROV, Kapal)
+        - mode='drone': Menampilkan target POV umum (Tim A Baju Biru, Tim B Baju Ungu, Sipil, Kendaraan, Kapal)
         """
         annotated_frame = frame.copy()
         h, w = frame.shape[:2]
@@ -124,14 +128,12 @@ class TacticalDetector:
                 box_w = x2 - x1
                 box_h = y2 - y1
 
-                # FILTER 2: AMBANG BATAS KHUSUS KENDARAAN TEMPUR (ELIMINASI BESI BIASA / BEBATUAN)
+                # FILTER 2: AMBANG BATAS KHUSUS KENDARAAN (ELIMINASI BESI BIASA / BEBATUAN)
                 if cls_id == 1:
-                    # Kendaraan tempur (tank/IFV) memerlukan confidence minimal 0.48
-                    # dan ukuran minimal (bukan serpihan/bongkahan kecil)
-                    MIN_VEHICLE_CONF = 0.48
+                    MIN_VEHICLE_CONF = 0.45
                     MIN_VEHICLE_AREA = 1200 # piksel kuadrat
                     if conf < MIN_VEHICLE_CONF or (box_w * box_h) < MIN_VEHICLE_AREA:
-                        continue # Lewati objek karena hanya besi biasa / noise background
+                        continue # Abaikan besi biasa / noise rongsokan
 
                 detected_class_ids.append(cls_id)
                 info = ThreatEvaluator.get_info_by_class_id(cls_id)
@@ -141,7 +143,7 @@ class TacticalDetector:
                 color_bgr = info["color_bgr"]
                 threat_status = info["threat"]
 
-                # STAGE 2: Pembedaan Cerdas Prajurit Tim A vs Tim B vs Warga Sipil
+                # STAGE 2: Pembedaan Tim A (Biru) vs Tim B (Ungu) vs Sipil (Lainnya)
                 if cls_id in (0, 2) and box_w > 10 and box_h > 10:
                     person_crop = frame[y1:y2, x1:x2]
                     t_name, t_label, t_bgr, _ = ThreatEvaluator.classify_soldier_team(person_crop)
@@ -151,17 +153,18 @@ class TacticalDetector:
 
                     if "TIM A" in t_name:
                         drone_stats["team_a"] += 1
-                        threat_status = "HAZARD"
+                        threat_status = "HAZARD" # Ditandai khusus Tim A
                     elif "TIM B" in t_name:
                         drone_stats["team_b"] += 1
-                        threat_status = "HAZARD"
+                        threat_status = "HAZARD" # Ditandai khusus Tim B
                     else:
-                        # Terklasifikasi sebagai Warga Sipil (Pakaian Sipil Non-Militer)
                         drone_stats["civilian"] += 1
-                        threat_status = "NEUTRAL"
+                        threat_status = "NEUTRAL" # Warga Sipil / Netral
 
                 elif cls_id == 1:
                     drone_stats["military_vehicle"] += 1
+                    display_name = "Kendaraan / Vehicle"
+                    color_bgr = (3, 183, 255) # Amber umum
                 elif cls_id == 3:
                     rov_stats["ship"] += 1
                 elif cls_id == 4:
@@ -254,4 +257,4 @@ class TacticalDetector:
         cv2.line(frame, (20, h - 20), (20 + border_len, h - 20), hud_color, 2)
         cv2.line(frame, (20, h - 20), (20, h - 20 - border_len), hud_color, 2)
         cv2.line(frame, (w - 20, h - 20), (w - 20 - border_len, h - 20), hud_color, 2)
-        cv2.line(frame, (w - 20, h - 20), (w - 20 - border_len, h - 20), hud_color, 2)
+        cv2.line(frame, (w - 20, h - 20), (w - 20, h - 20 - border_len), hud_color, 2)

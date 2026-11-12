@@ -1,9 +1,13 @@
 """
 Module: core/threat_evaluator.py
 Deskripsi:
-    Rule Engine untuk mengevaluasi status ancaman (Threat Status: HAZARD vs NEUTRAL),
-    pemisahan operasional wahana (Mode ROV Danau/Games vs Mode Drone Spectator/Recon),
-    dan pembedaan cerdas antara Prajurit Tim A, Prajurit Tim B, dan Warga Sipil (Stage 2).
+    Rule Engine Taktis & Klasifikasi Warna Baju (Stage 2):
+    - Mode ROV (Danau & Bawah Air: Kapal Selam, Biota, Karang, ROV, Kapal)
+    - Mode Drone (POV Umum):
+        * Person -> Klasifikasi Warna Baju: Tim A (Baju Biru) vs Tim B (Baju Ungu) vs Sipil (Lainnya)
+        * Kendaraan / Vehicle (Kendaraan Umum: Mobil, Truk, dll)
+        * Perahu / Kapal (Vessel Danau)
+        * Drone FPV
 """
 
 import cv2
@@ -16,55 +20,55 @@ class ThreatEvaluator:
     TAXONOMY = {
         0: {
             "name": "soldier",
-            "display": "Prajurit (Soldier)",
+            "display": "Orang / Person",
             "domain": "Land",
             "allowed_modes": {"drone", "all"},
             "threat": "HAZARD",
-            "threat_label": "Berbahaya (Ancaman Personel Militer)",
-            "color_bgr": (0, 0, 255),
-            "color_hex": "#FF3B30",
+            "threat_label": "Personel (Akan dievaluasi warna baju)",
+            "color_bgr": (255, 153, 0),    # Default Biru/Cyan
+            "color_hex": "#0099FF",
             "ref_width_m": 0.5
         },
         1: {
             "name": "military_vehicle",
-            "display": "Kendaraan Tempur (Tank/IFV)",
-            "domain": "Land",
-            "allowed_modes": {"drone", "all"},
-            "threat": "HAZARD",
-            "threat_label": "Berbahaya (Lapis Baja Musuh)",
-            "color_bgr": (0, 0, 255),
-            "color_hex": "#FF3B30",
-            "ref_width_m": 3.2
-        },
-        2: {
-            "name": "civilian",
-            "display": "Warga Sipil (Civilian)",
+            "display": "Kendaraan / Vehicle",
             "domain": "Land",
             "allowed_modes": {"drone", "all"},
             "threat": "NEUTRAL",
-            "threat_label": "Aman (Non-Kombatan / Sipil)",
+            "threat_label": "Kendaraan Umum (Mobil/Truk/Darat)",
+            "color_bgr": (3, 183, 255),    # Oranye / Amber Umum
+            "color_hex": "#FFB703",
+            "ref_width_m": 2.5
+        },
+        2: {
+            "name": "civilian",
+            "display": "Orang / Person",
+            "domain": "Land",
+            "allowed_modes": {"drone", "all"},
+            "threat": "NEUTRAL",
+            "threat_label": "Sipil / Non-Tim",
             "color_bgr": (0, 255, 0),      # Hijau
             "color_hex": "#34C759",
             "ref_width_m": 0.5
         },
         3: {
             "name": "ship",
-            "display": "Kapal / Perahu Danau",
+            "display": "Perahu / Kapal Danau",
             "domain": "Surface Water",
             "allowed_modes": {"rov", "drone", "all"},
-            "threat": "HAZARD",
-            "threat_label": "Waspada (Vessel Permukaan Air)",
-            "color_bgr": (0, 165, 255),
+            "threat": "NEUTRAL",
+            "threat_label": "Wahana Permukaan Danau",
+            "color_bgr": (0, 165, 255),    # Oranye
             "color_hex": "#FF9500",
-            "ref_width_m": 15.0
+            "ref_width_m": 8.0
         },
         4: {
             "name": "submarine",
-            "display": "Kapal Selam (Submarine)",
+            "display": "Kapal Selam / Submarine",
             "domain": "Underwater",
             "allowed_modes": {"rov", "all"},
             "threat": "HAZARD",
-            "threat_label": "Berbahaya (Wahana Bawah Air Musuh)",
+            "threat_label": "Target Bawah Air (Submarine)",
             "color_bgr": (0, 0, 255),
             "color_hex": "#FF3B30",
             "ref_width_m": 12.0
@@ -75,42 +79,42 @@ class ThreatEvaluator:
             "domain": "Underwater",
             "allowed_modes": {"rov", "all"},
             "threat": "NEUTRAL",
-            "threat_label": "Netral (Fauna Air / Danau)",
+            "threat_label": "Fauna Air / Ikan Danau",
             "color_bgr": (0, 255, 0),
             "color_hex": "#34C759",
             "ref_width_m": 0.4
         },
         6: {
             "name": "coral_reef",
-            "display": "Terumbu Karang / Batuan",
+            "display": "Terumbu Karang / Formasi Batuan",
             "domain": "Underwater",
             "allowed_modes": {"rov", "all"},
             "threat": "NEUTRAL",
-            "threat_label": "Netral (Formasi Alam Danau)",
+            "threat_label": "Objek Alami Dasar Danau",
             "color_bgr": (0, 255, 0),
             "color_hex": "#34C759",
             "ref_width_m": 1.5
         },
         7: {
             "name": "rov",
-            "display": "Wahana ROV (Friendly)",
+            "display": "Wahana ROV Danau",
             "domain": "Underwater",
             "allowed_modes": {"rov", "all"},
             "threat": "NEUTRAL",
-            "threat_label": "Kawan (ROV Patroli / Games)",
+            "threat_label": "ROV Friendly Unit",
             "color_bgr": (255, 255, 0),
             "color_hex": "#00E5FF",
             "ref_width_m": 0.8
         },
         8: {
             "name": "fpv_drone",
-            "display": "Drone FPV (Friendly/Spectator)",
+            "display": "Drone FPV (Udara)",
             "domain": "Land",
             "allowed_modes": {"drone", "all"},
-            "threat": "HAZARD",
-            "threat_label": "Waspada (Wahana Udara)",
-            "color_bgr": (0, 165, 255),
-            "color_hex": "#FF9500",
+            "threat": "NEUTRAL",
+            "threat_label": "Wahana Drone Udara",
+            "color_bgr": (0, 255, 102),
+            "color_hex": "#00FF66",
             "ref_width_m": 0.4
         }
     }
@@ -149,46 +153,58 @@ class ThreatEvaluator:
     @classmethod
     def classify_soldier_team(cls, cropped_bgr: np.ndarray) -> Tuple[str, str, Tuple[int, int, int], str]:
         """
-        Stage 2: Pembedaan Cerdas Prajurit Tim A, Prajurit Tim B, dan Warga Sipil.
-        - Loreng Hijau (Woodland) >= 8% -> Prajurit [TIM A] (Hazard Merah)
-        - Loreng Gurun/Hitam Taktis >= 8% -> Prajurit [TIM B] (Hazard Ungu)
-        - Tanpa pakaian loreng militer    -> Warga Sipil (Neutral Hijau)
+        Stage 2: Pembedaan Tim A vs Tim B Berdasarkan Warna Baju (Torso Upper Body):
+        - Baju BIRU  -> Tim A (Box Biru: #0099FF / BGR (255, 153, 0))
+        - Baju UNGU  -> Tim B (Box Ungu: #9D4EDD / BGR (221, 78, 157))
+        - Warna Lain -> Warga Sipil / Netral (Box Hijau: #34C759 / BGR (0, 255, 0))
         """
         if cropped_bgr is None or cropped_bgr.size == 0:
-            return ("Warga Sipil", "Aman (Non-Kombatan / Sipil)", (0, 255, 0), "#34C759")
+            return ("Sipil / Netral", "Bukan Anggota Tim A/B", (0, 255, 0), "#34C759")
 
-        hsv = cv2.cvtColor(cropped_bgr, cv2.COLOR_BGR2HSV)
-        total_pixels = float(cropped_bgr.shape[0] * cropped_bgr.shape[1])
+        h, w = cropped_bgr.shape[:2]
 
-        # 1. Masking Corak Hijau Camouflage (Tim A - Seragam Loreng TNI / Hutan)
-        lower_green = np.array([35, 40, 35])
-        upper_green = np.array([85, 255, 255])
-        green_mask = cv2.inRange(hsv, lower_green, upper_green)
-        green_ratio = np.count_nonzero(green_mask) / total_pixels
-
-        # 2. Masking Corak Gurun / Tan / Cokelat Taktis (Tim B - Desert Camo)
-        lower_tan = np.array([10, 35, 50])
-        upper_tan = np.array([25, 200, 200])
-        tan_mask = cv2.inRange(hsv, lower_tan, upper_tan)
-        tan_ratio = np.count_nonzero(tan_mask) / total_pixels
-
-        # Ambang batas deteksi seragam militer (minimal 7% piksel tubuh memiliki corak militer)
-        MILITARY_CAMO_THRESHOLD = 0.07
-
-        if green_ratio >= MILITARY_CAMO_THRESHOLD and green_ratio >= tan_ratio:
-            return ("Prajurit [TIM A]", "Target Tempur: Tim A (Camo Hijau)", (0, 0, 255), "#FF3B30")
-        elif tan_ratio >= MILITARY_CAMO_THRESHOLD and tan_ratio > green_ratio:
-            return ("Prajurit [TIM B]", "Target Tempur: Tim B (Desert Camo)", (255, 0, 128), "#AF52DE")
+        # Isolasi area dada/baju (Torso: 25% s/d 75% tinggi tubuh, memotong rambut & celana)
+        y_start = int(h * 0.25)
+        y_end = int(h * 0.75)
+        if (y_end - y_start) > 5:
+            torso_bgr = cropped_bgr[y_start:y_end, :]
         else:
-            # Tidak berpakaian loreng militer -> Warga Sipil!
-            return ("Warga Sipil", "Aman (Pakaian Sipil Non-Militer)", (0, 255, 0), "#34C759")
+            torso_bgr = cropped_bgr
+
+        hsv = cv2.cvtColor(torso_bgr, cv2.COLOR_BGR2HSV)
+        total_pixels = float(torso_bgr.shape[0] * torso_bgr.shape[1])
+
+        # 1. Masking Spektrum Warna BIRU (Tim A)
+        # Rentang Hue Biru: 95 s/d 130
+        lower_blue = np.array([95, 35, 35])
+        upper_blue = np.array([130, 255, 255])
+        blue_mask = cv2.inRange(hsv, lower_blue, upper_blue)
+        blue_ratio = np.count_nonzero(blue_mask) / total_pixels
+
+        # 2. Masking Spektrum Warna UNGU / VIOLET (Tim B)
+        # Rentang Hue Ungu: 130 s/d 165
+        lower_purple = np.array([130, 35, 35])
+        upper_purple = np.array([165, 255, 255])
+        purple_mask = cv2.inRange(hsv, lower_purple, upper_purple)
+        purple_ratio = np.count_nonzero(purple_mask) / total_pixels
+
+        # Ambang batas persentase warna baju minimal
+        SHIRT_COLOR_THRESHOLD = 0.06
+
+        if blue_ratio >= SHIRT_COLOR_THRESHOLD and blue_ratio >= purple_ratio:
+            return ("Person [TIM A - BIRU]", "Anggota Tim A (Baju Biru)", (255, 153, 0), "#0099FF")
+        elif purple_ratio >= SHIRT_COLOR_THRESHOLD and purple_ratio > blue_ratio:
+            return ("Person [TIM B - UNGU]", "Anggota Tim B (Baju Ungu)", (221, 78, 157), "#9D4EDD")
+        else:
+            # Tidak mengenakan baju biru maupun ungu -> Warga Sipil / Netral
+            return ("Warga Sipil / Netral", "Pakaian Biasa (Bukan Tim A/B)", (0, 255, 0), "#34C759")
 
     @classmethod
     def determine_environment(cls, detected_class_ids: List[int], mode: str = "all") -> Tuple[str, str]:
         if mode.lower() == "rov":
             return ("Lake / Underwater Ops", "Bawah Air & Danau")
         elif mode.lower() == "drone":
-            return ("Aerial Recon / Spectator", "Ruang Udara & Darat")
+            return ("Aerial Spectator / Drone POV", "Ruang Udara & Lapangan")
 
         if not detected_class_ids:
             return ("Scanning Horizon", "Standby")

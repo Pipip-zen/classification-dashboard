@@ -83,13 +83,13 @@ st.markdown("""
         margin-top: 8px;
     }
     .score-team-a {
-        color: #FF3B30;
+        color: #0099FF;
         font-family: monospace;
         font-size: 1.4rem;
         font-weight: bold;
     }
     .score-team-b {
-        color: #AF52DE;
+        color: #9D4EDD;
         font-family: monospace;
         font-size: 1.4rem;
         font-weight: bold;
@@ -361,7 +361,7 @@ if is_active:
             """, unsafe_allow_html=True)
 
         else:
-            # RINCIAN KLASIFIKASI SPECTATOR DRONE (TIM A VS TIM B)
+            # RINCIAN KLASIFIKASI SPECTATOR DRONE (TIM A BIRU VS TIM B UNGU)
             breakdown_placeholder.markdown(f"""
             <div class="hud-card">
                 <div style="font-size: 0.75rem; color: #00FF66; font-family: monospace; font-weight: bold;">
@@ -370,17 +370,17 @@ if is_active:
                 <div class="scoreboard-box">
                     <div>
                         <div class="score-team-a">{results['drone_stats']['team_a']}</div>
-                        <div class="score-label">TIM A (HIJAU)</div>
+                        <div class="score-label">TIM A (BIRU)</div>
                     </div>
                     <div style="font-size: 1.2rem; color: #475569; align-self: center;">VS</div>
                     <div>
                         <div class="score-team-b">{results['drone_stats']['team_b']}</div>
-                        <div class="score-label">TIM B (GURUN)</div>
+                        <div class="score-label">TIM B (UNGU)</div>
                     </div>
                 </div>
                 <div style="font-size: 0.8rem; color: #94A3B8; font-family: monospace; margin-top: 8px;">
-                    • Kendaraan Tempur : <b>{results['drone_stats']['military_vehicle']}</b> unit<br/>
-                    • Warga Sipil      : <b>{results['drone_stats']['civilian']}</b> orang
+                    • Kendaraan / Vehicle : <b>{results['drone_stats']['military_vehicle']}</b> unit<br/>
+                    • Warga Sipil / Netral: <b>{results['drone_stats']['civilian']}</b> orang
                 </div>
             </div>
             """, unsafe_allow_html=True)

@@ -33,17 +33,23 @@ def test_threat_evaluator():
     print("[1/7] Menguji ThreatEvaluator & Stage-2 Classifier...", end="")
     assert len(ThreatEvaluator.TAXONOMY) == 9, "Taksonomi harus memiliki 9 kelas"
     
-    # Uji deteksi seragam hijau (Tim A)
-    green_patch = np.zeros((100, 100, 3), dtype=np.uint8)
-    green_patch[:] = (35, 120, 45) # BGR Hijau
-    t_name_a, t_lbl_a, bgr_a, _ = ThreatEvaluator.classify_soldier_team(green_patch)
-    assert "tim a" in t_name_a.lower(), f"Gagal klasifikasi Tim A: {t_name_a}"
+    # Uji deteksi baju BIRU (Tim A)
+    blue_patch = np.zeros((100, 100, 3), dtype=np.uint8)
+    blue_patch[:] = (200, 100, 20) # BGR Biru
+    t_name_a, t_lbl_a, bgr_a, _ = ThreatEvaluator.classify_soldier_team(blue_patch)
+    assert "tim a" in t_name_a.lower() and "biru" in t_name_a.lower(), f"Gagal klasifikasi Tim A Biru: {t_name_a}"
 
-    # Uji deteksi seragam gurun/hitam (Tim B)
-    tan_patch = np.zeros((100, 100, 3), dtype=np.uint8)
-    tan_patch[:] = (50, 120, 180) # BGR Cokelat Tan
-    t_name_b, t_lbl_b, bgr_b, _ = ThreatEvaluator.classify_soldier_team(tan_patch)
-    assert "tim b" in t_name_b.lower(), f"Gagal klasifikasi Tim B: {t_name_b}"
+    # Uji deteksi baju UNGU (Tim B)
+    purple_patch = np.zeros((100, 100, 3), dtype=np.uint8)
+    purple_patch[:] = (180, 40, 140) # BGR Ungu
+    t_name_b, t_lbl_b, bgr_b, _ = ThreatEvaluator.classify_soldier_team(purple_patch)
+    assert "tim b" in t_name_b.lower() and "ungu" in t_name_b.lower(), f"Gagal klasifikasi Tim B Ungu: {t_name_b}"
+
+    # Uji deteksi pakaian biasa (Sipil / Netral)
+    civilian_patch = np.zeros((100, 100, 3), dtype=np.uint8)
+    civilian_patch[:] = (240, 240, 240) # BGR Putih
+    t_name_civ, _, _, _ = ThreatEvaluator.classify_soldier_team(civilian_patch)
+    assert "sipil" in t_name_civ.lower(), f"Gagal klasifikasi Sipil: {t_name_civ}"
 
     # Uji pemfilteran mode operasional
     assert ThreatEvaluator.is_class_allowed_for_mode(4, "rov"), "Submarine harus aktif di Mode ROV"
