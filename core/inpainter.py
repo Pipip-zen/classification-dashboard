@@ -48,3 +48,4 @@ class ImageInpainter:
             cv2.rectangle(mask, (x1, y1), (x2, y2), 255, -1)
 
         return mask
+

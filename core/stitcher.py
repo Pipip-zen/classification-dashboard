@@ -57,3 +57,4 @@ class ImageStitcher:
         if w > 10 and h > 10:
             return image[y:y+h, x:x+w]
         return image
+

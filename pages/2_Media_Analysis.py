@@ -1,10 +1,11 @@
 """
 Page: 2_Media_Analysis.py
 Deskripsi:
-    Analisis media offline:
-    1. Upload Foto Tunggal (Single Image)
-    2. Upload Rekaman Video (MP4/AVI)
-    Dilengkapi tabel deteksi, telemetri jarak, dan ekspor log CSV.
+    Analisis media offline (Foto & Video MP4):
+    Mendukung Pemfilteran Mode Operasi:
+    - 🔵 Mode ROV (Danau & Bawah Air)
+    - 🟢 Mode Drone (Spectator Udara & Personel Darat)
+    Dilengkapi tabel deteksi taktis, telemetri jarak, dan ekspor log CSV.
 """
 
 import cv2
@@ -21,8 +22,8 @@ from core.distance_estimator import DistanceEstimator
 
 st.set_page_config(page_title="Media Analysis", page_icon="🎞️", layout="wide")
 
-st.title("🎞️ Analisis Media Visual (Foto & Video MP4)")
-st.caption("Pemeriksaan intelijen citra dan rekaman misi patroli ROV/Drone")
+st.title("🎞️ Analisis Media Visual Taktis (Foto & Video MP4)")
+st.caption("Pemeriksaan Intelijen & Rekapitulasi Misi ROV Danau vs Drone Spectator")
 
 # Load detector
 if "detector" not in st.session_state:
@@ -33,10 +34,19 @@ if "detector" not in st.session_state:
 
 detector: TacticalDetector = st.session_state.detector
 
+# Pemilihan Mode Analisis
+mode_sel = st.radio(
+    "PILIH DOMAIN ANALISIS WAHANA:",
+    ["🔵 Mode ROV: Danau & Bawah Air", "🟢 Mode Drone: Spectator Udara & Darat", "🌐 Mode Terpadu (Semua Target)"],
+    horizontal=True
+)
+
+mode_code = "rov" if "ROV" in mode_sel else ("drone" if "Drone" in mode_sel else "all")
+
 # Sidebar Settings
 with st.sidebar:
     st.header("⚙️ Parameter Analisis")
-    conf_val = st.slider("Confidence Threshold", 0.10, 0.90, 0.35, 0.05)
+    conf_val = st.slider("Confidence Gate", 0.10, 0.90, 0.35, 0.05)
     detector.conf_threshold = conf_val
 
     enable_dist = st.toggle("Aktifkan Estimasi Jarak", value=True)
@@ -51,7 +61,7 @@ tab_img, tab_video = st.tabs(["📸 Analisis Foto Tunggal", "🎥 Analisis Rekam
 
 # ----------------- TAB 1: ANALISIS FOTO TUNGGAL -----------------
 with tab_img:
-    st.subheader("Pilih atau Unggah Citra")
+    st.subheader("Pilih atau Unggah Citra Misi")
 
     col_up, col_samples = st.columns([2, 1])
     with col_up:
@@ -72,16 +82,14 @@ with tab_img:
         img_to_process = cv2.imread(str(sample_dir / chosen_sample))
 
     if img_to_process is not None:
-        results = detector.detect(img_to_process, enable_distance=enable_dist)
+        results = detector.detect(img_to_process, enable_distance=enable_dist, mode=mode_code)
         annotated = results["annotated_frame"]
         detections = results["detections"]
 
-        # Kolom Tampilan
         c1, c2 = st.columns([3, 2])
         with c1:
-            st.image(cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB), caption="Hasil Deteksi Taktis & Bounding Box", use_container_width=True)
+            st.image(cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB), caption="Hasil Deteksi Taktis & Reticle HUD", use_container_width=True)
 
-            # Tombol Download Citra
             _, encoded_png = cv2.imencode(".png", annotated)
             st.download_button(
                 label="📥 Unduh Citra Beranotasi (PNG)",
@@ -91,13 +99,18 @@ with tab_img:
             )
 
         with c2:
-            st.markdown(f"### Domain Lingkungan: **{results['environment']}**")
+            st.markdown(f"### Domain Terpilih: **{results['environment']}**")
             m_col1, m_col2 = st.columns(2)
             m_col1.metric("🚨 Target Bahaya (Hazard)", results["hazard_count"])
             m_col2.metric("🟢 Target Netral (Aman)", results["neutral_count"])
 
+            if mode_code == "drone":
+                st.info(f"⚔️ **Spectator Score:** Tim A: **{results['drone_stats']['team_a']}** | Tim B: **{results['drone_stats']['team_b']}** | Sipil: **{results['drone_stats']['civilian']}**")
+            elif mode_code == "rov":
+                st.info(f"🐟 **Objek Danau:** Ikan/Biota: **{results['rov_stats']['marine_life']}** | Karang: **{results['rov_stats']['coral_reef']}** | Submarine: **{results['rov_stats']['submarine']}**")
+
             st.divider()
-            st.markdown("#### Rincian Objek Terdeteksi:")
+            st.markdown("#### Rincian Log Target Terdeteksi:")
 
             if detections:
                 log_data = []
@@ -107,15 +120,14 @@ with tab_img:
                         "No": idx,
                         "Target": d["display_name"],
                         "Confidence": f"{int(d['confidence'] * 100)}%",
-                        "Status Ancaman": d["threat"],
+                        "Status": d["threat"],
                         "Estimasi Jarak": dist_str,
                         "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     })
 
                 df_log = pd.DataFrame(log_data)
-                st.dataframe(df_log[["Target", "Confidence", "Status Ancaman", "Estimasi Jarak"]], use_container_width=True)
+                st.dataframe(df_log[["Target", "Confidence", "Status", "Estimasi Jarak"]], use_container_width=True)
 
-                # Tombol Download CSV
                 csv_bytes = df_log.to_csv(index=False).encode("utf-8")
                 st.download_button(
                     label="📊 Unduh Log Misi (CSV)",
@@ -124,7 +136,7 @@ with tab_img:
                     mime="text/csv"
                 )
             else:
-                st.info("Tidak ada objek yang terdeteksi di atas batas confidence threshold.")
+                st.info("Tidak ada target yang lolos filter mode dan threshold.")
 
 # ----------------- TAB 2: ANALISIS VIDEO REKAMAN -----------------
 with tab_video:
@@ -140,9 +152,7 @@ with tab_video:
         video_placeholder = v_col1.empty()
         log_placeholder = v_col2.empty()
 
-        start_process = st.button("🚀 Mulai Analisis Video", type="primary")
-
-        if start_process:
+        if st.button("🚀 Mulai Analisis Video Taktis", type="primary"):
             cap = cv2.VideoCapture(video_path)
             frame_count = 0
             video_logs = []
@@ -153,14 +163,13 @@ with tab_video:
                     break
 
                 frame_count += 1
-                # Proses tiap 2 frame untuk menjaga kelancaran UI
                 if frame_count % 2 == 0:
-                    res = detector.detect(frame, enable_distance=enable_dist)
+                    res = detector.detect(frame, enable_distance=enable_dist, mode=mode_code)
                     annotated_v = res["annotated_frame"]
 
                     video_placeholder.image(
                         cv2.cvtColor(annotated_v, cv2.COLOR_BGR2RGB),
-                        caption=f"Frame #{frame_count} | Domain: {res['environment']}",
+                        caption=f"Frame #{frame_count} // Mode: {mode_sel}",
                         use_container_width=True
                     )
 
@@ -174,7 +183,7 @@ with tab_video:
                         })
 
             cap.release()
-            st.success("Analisis rekaman video selesai diselesaikan!")
+            st.success("Analisis rekaman video selesai!")
 
             if video_logs:
                 df_vlog = pd.DataFrame(video_logs)
@@ -185,4 +194,3 @@ with tab_video:
                     file_name=f"video_analysis_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                     mime="text/csv"
                 )
-

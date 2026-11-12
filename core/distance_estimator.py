@@ -67,3 +67,4 @@ class DistanceEstimator:
 
         distance_m = (real_width * self.focal_length_px) / pixel_width
         return round(float(distance_m), 2)
+
