@@ -3,7 +3,7 @@ Module: core/threat_evaluator.py
 Deskripsi:
     Rule Engine untuk mengevaluasi status ancaman (Threat Status: HAZARD vs NEUTRAL),
     pemisahan operasional wahana (Mode ROV Danau/Games vs Mode Drone Spectator/Recon),
-    dan klasifikasi prajurit Tim A vs Tim B (Stage 2).
+    dan pembedaan cerdas antara Prajurit Tim A, Prajurit Tim B, dan Warga Sipil (Stage 2).
 """
 
 import cv2
@@ -20,8 +20,8 @@ class ThreatEvaluator:
             "domain": "Land",
             "allowed_modes": {"drone", "all"},
             "threat": "HAZARD",
-            "threat_label": "Berbahaya (Ancaman Personel)",
-            "color_bgr": (0, 0, 255),      # Merah
+            "threat_label": "Berbahaya (Ancaman Personel Militer)",
+            "color_bgr": (0, 0, 255),
             "color_hex": "#FF3B30",
             "ref_width_m": 0.5
         },
@@ -38,11 +38,11 @@ class ThreatEvaluator:
         },
         2: {
             "name": "civilian",
-            "display": "Sipil (Civilian / Netral)",
+            "display": "Warga Sipil (Civilian)",
             "domain": "Land",
             "allowed_modes": {"drone", "all"},
             "threat": "NEUTRAL",
-            "threat_label": "Aman (Warga Sipil / Non-Kombatan)",
+            "threat_label": "Aman (Non-Kombatan / Sipil)",
             "color_bgr": (0, 255, 0),      # Hijau
             "color_hex": "#34C759",
             "ref_width_m": 0.5
@@ -54,7 +54,7 @@ class ThreatEvaluator:
             "allowed_modes": {"rov", "drone", "all"},
             "threat": "HAZARD",
             "threat_label": "Waspada (Vessel Permukaan Air)",
-            "color_bgr": (0, 165, 255),    # Oranye Waspada
+            "color_bgr": (0, 165, 255),
             "color_hex": "#FF9500",
             "ref_width_m": 15.0
         },
@@ -64,7 +64,7 @@ class ThreatEvaluator:
             "domain": "Underwater",
             "allowed_modes": {"rov", "all"},
             "threat": "HAZARD",
-            "threat_label": "Berbahaya (Wahana Bawah Air)",
+            "threat_label": "Berbahaya (Wahana Bawah Air Musuh)",
             "color_bgr": (0, 0, 255),
             "color_hex": "#FF3B30",
             "ref_width_m": 12.0
@@ -98,7 +98,7 @@ class ThreatEvaluator:
             "allowed_modes": {"rov", "all"},
             "threat": "NEUTRAL",
             "threat_label": "Kawan (ROV Patroli / Games)",
-            "color_bgr": (255, 255, 0),    # Cyan/Kuning
+            "color_bgr": (255, 255, 0),
             "color_hex": "#00E5FF",
             "ref_width_m": 0.8
         },
@@ -115,13 +115,11 @@ class ThreatEvaluator:
         }
     }
 
-    # Pembagian Filter Kelas Berdasarkan Mode Operasi
-    ROV_ALLOWED_CLASSES: Set[int] = {3, 4, 5, 6, 7}     # Kapal, Kapal Selam, Biota, Karang/Batuan, ROV
-    DRONE_ALLOWED_CLASSES: Set[int] = {0, 1, 2, 3, 8}   # Soldier, Kendaraan, Sipil, Kapal/Perahu dari atas, Drone
+    ROV_ALLOWED_CLASSES: Set[int] = {3, 4, 5, 6, 7}
+    DRONE_ALLOWED_CLASSES: Set[int] = {0, 1, 2, 3, 8}
 
     @classmethod
     def is_class_allowed_for_mode(cls, class_id: int, mode: str) -> bool:
-        """Memeriksa apakah kelas target relevan untuk wahana yang sedang aktif."""
         mode_lower = mode.lower()
         if mode_lower == "all":
             return True
@@ -151,28 +149,39 @@ class ThreatEvaluator:
     @classmethod
     def classify_soldier_team(cls, cropped_bgr: np.ndarray) -> Tuple[str, str, Tuple[int, int, int], str]:
         """
-        Stage 2: Spectator Affiliation Classifier
-        - Seragam Hijau Camo = Tim A (Merah)
-        - Seragam Tan / Hitam = Tim B (Ungu / Biru Taktis)
+        Stage 2: Pembedaan Cerdas Prajurit Tim A, Prajurit Tim B, dan Warga Sipil.
+        - Loreng Hijau (Woodland) >= 8% -> Prajurit [TIM A] (Hazard Merah)
+        - Loreng Gurun/Hitam Taktis >= 8% -> Prajurit [TIM B] (Hazard Ungu)
+        - Tanpa pakaian loreng militer    -> Warga Sipil (Neutral Hijau)
         """
         if cropped_bgr is None or cropped_bgr.size == 0:
-            return ("Soldier (Tim A)", "Berbahaya (Prajurit Tim A)", (0, 0, 255), "#FF3B30")
+            return ("Warga Sipil", "Aman (Non-Kombatan / Sipil)", (0, 255, 0), "#34C759")
 
         hsv = cv2.cvtColor(cropped_bgr, cv2.COLOR_BGR2HSV)
-        lower_green = np.array([35, 40, 40])
+        total_pixels = float(cropped_bgr.shape[0] * cropped_bgr.shape[1])
+
+        # 1. Masking Corak Hijau Camouflage (Tim A - Seragam Loreng TNI / Hutan)
+        lower_green = np.array([35, 40, 35])
         upper_green = np.array([85, 255, 255])
         green_mask = cv2.inRange(hsv, lower_green, upper_green)
-        green_ratio = np.count_nonzero(green_mask) / float(cropped_bgr.shape[0] * cropped_bgr.shape[1])
+        green_ratio = np.count_nonzero(green_mask) / total_pixels
 
-        lower_tan = np.array([10, 30, 60])
+        # 2. Masking Corak Gurun / Tan / Cokelat Taktis (Tim B - Desert Camo)
+        lower_tan = np.array([10, 35, 50])
         upper_tan = np.array([25, 200, 200])
         tan_mask = cv2.inRange(hsv, lower_tan, upper_tan)
-        tan_ratio = np.count_nonzero(tan_mask) / float(cropped_bgr.shape[0] * cropped_bgr.shape[1])
+        tan_ratio = np.count_nonzero(tan_mask) / total_pixels
 
-        if green_ratio >= tan_ratio and green_ratio > 0.08:
-            return ("Soldier [TIM A]", "Target Tempur: Tim A (Camo Hijau)", (0, 0, 255), "#FF3B30")
+        # Ambang batas deteksi seragam militer (minimal 7% piksel tubuh memiliki corak militer)
+        MILITARY_CAMO_THRESHOLD = 0.07
+
+        if green_ratio >= MILITARY_CAMO_THRESHOLD and green_ratio >= tan_ratio:
+            return ("Prajurit [TIM A]", "Target Tempur: Tim A (Camo Hijau)", (0, 0, 255), "#FF3B30")
+        elif tan_ratio >= MILITARY_CAMO_THRESHOLD and tan_ratio > green_ratio:
+            return ("Prajurit [TIM B]", "Target Tempur: Tim B (Desert Camo)", (255, 0, 128), "#AF52DE")
         else:
-            return ("Soldier [TIM B]", "Target Tempur: Tim B (Desert/Hitam)", (255, 0, 128), "#AF52DE")
+            # Tidak berpakaian loreng militer -> Warga Sipil!
+            return ("Warga Sipil", "Aman (Pakaian Sipil Non-Militer)", (0, 255, 0), "#34C759")
 
     @classmethod
     def determine_environment(cls, detected_class_ids: List[int], mode: str = "all") -> Tuple[str, str]:

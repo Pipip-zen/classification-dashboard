@@ -4,8 +4,8 @@ Deskripsi:
     Engine deteksi objek & klasifikasi taktis menggunakan Ultralytics YOLOv8 / YOLO11.
     FOKUS MURNI IMAGE CLASSIFICATION & OBJECT DETECTION:
     - Mode ROV (Danau & Bawah Air: Kapal Selam, Biota, Karang, ROV, Kapal)
-    - Mode Drone (Spectator Udara: Prajurit Tim A vs Tim B, Kendaraan, Sipil)
-    Dilengkapi Tactical HUD Reticles & Rekapitulasi Kelas Real-time.
+    - Mode Drone (Spectator Udara: Pembedaan Cerdas Prajurit Tim A, Tim B, dan Warga Sipil)
+    - Filter Khusus Kendaraan Tempur: Mengeliminasi false positive pada bongkahan besi/bebatuan.
 """
 
 import cv2
@@ -60,10 +60,8 @@ class TacticalDetector:
         draw_hud_reticle: bool = True
     ) -> Dict[str, Any]:
         """
-        Melakukan inferensi taktis berfokus murni pada Image Classification & Localization:
-        - mode='rov': Menampilkan target danau/bawah air (Submarine, Ikan, Karang, ROV, Kapal)
-        - mode='drone': Menampilkan target udara/darat (Soldier Tim A/B, Kendaraan, Sipil, Kapal)
-        - mode='all': Menampilkan seluruh target
+        Melakukan inferensi taktis berfokus murni pada Image Classification & Localization
+        dengan filter anti-false-positive pada kendaraan tempur dan pembeda sipil vs tentara.
         """
         annotated_frame = frame.copy()
         h, w = frame.shape[:2]
@@ -116,36 +114,54 @@ class TacticalDetector:
                 conf = float(box.conf[0].cpu().numpy())
                 cls_id = int(box.cls[0].cpu().numpy())
 
-                # FILTER BERDASARKAN MODE OPERASI (ROV vs DRONE)
+                # FILTER 1: FILTER BERDASARKAN MODE OPERASI (ROV vs DRONE)
                 if not ThreatEvaluator.is_class_allowed_for_mode(cls_id, mode):
                     continue
-
-                detected_class_ids.append(cls_id)
-                info = ThreatEvaluator.get_info_by_class_id(cls_id)
 
                 x1, y1, x2, y2 = xyxy
                 x1, y1 = max(0, x1), max(0, y1)
                 x2, y2 = min(w, x2), min(h, y2)
+                box_w = x2 - x1
+                box_h = y2 - y1
+
+                # FILTER 2: AMBANG BATAS KHUSUS KENDARAAN TEMPUR (ELIMINASI BESI BIASA / BEBATUAN)
+                if cls_id == 1:
+                    # Kendaraan tempur (tank/IFV) memerlukan confidence minimal 0.48
+                    # dan ukuran minimal (bukan serpihan/bongkahan kecil)
+                    MIN_VEHICLE_CONF = 0.48
+                    MIN_VEHICLE_AREA = 1200 # piksel kuadrat
+                    if conf < MIN_VEHICLE_CONF or (box_w * box_h) < MIN_VEHICLE_AREA:
+                        continue # Lewati objek karena hanya besi biasa / noise background
+
+                detected_class_ids.append(cls_id)
+                info = ThreatEvaluator.get_info_by_class_id(cls_id)
 
                 display_name = info["display"]
                 threat_label = info["threat_label"]
                 color_bgr = info["color_bgr"]
+                threat_status = info["threat"]
 
-                # STAGE 2: Pembedaan Soldier Tim A vs Tim B (Khusus Drone / Spectator)
-                if cls_id == 0 and (x2 - x1) > 10 and (y2 - y1) > 10:
-                    soldier_crop = frame[y1:y2, x1:x2]
-                    t_name, t_label, t_bgr, _ = ThreatEvaluator.classify_soldier_team(soldier_crop)
+                # STAGE 2: Pembedaan Cerdas Prajurit Tim A vs Tim B vs Warga Sipil
+                if cls_id in (0, 2) and box_w > 10 and box_h > 10:
+                    person_crop = frame[y1:y2, x1:x2]
+                    t_name, t_label, t_bgr, _ = ThreatEvaluator.classify_soldier_team(person_crop)
                     display_name = t_name
                     threat_label = t_label
                     color_bgr = t_bgr
+
                     if "TIM A" in t_name:
                         drone_stats["team_a"] += 1
-                    else:
+                        threat_status = "HAZARD"
+                    elif "TIM B" in t_name:
                         drone_stats["team_b"] += 1
+                        threat_status = "HAZARD"
+                    else:
+                        # Terklasifikasi sebagai Warga Sipil (Pakaian Sipil Non-Militer)
+                        drone_stats["civilian"] += 1
+                        threat_status = "NEUTRAL"
+
                 elif cls_id == 1:
                     drone_stats["military_vehicle"] += 1
-                elif cls_id == 2:
-                    drone_stats["civilian"] += 1
                 elif cls_id == 3:
                     rov_stats["ship"] += 1
                 elif cls_id == 4:
@@ -157,7 +173,7 @@ class TacticalDetector:
                 elif cls_id == 7:
                     rov_stats["rov"] += 1
 
-                is_hazard = (info["threat"] == "HAZARD")
+                is_hazard = (threat_status == "HAZARD")
                 if is_hazard:
                     hazard_count += 1
                 else:
@@ -169,7 +185,7 @@ class TacticalDetector:
                     "display_name": display_name,
                     "confidence": conf,
                     "box": [int(x1), int(y1), int(x2), int(y2)],
-                    "threat": info["threat"],
+                    "threat": threat_status,
                     "threat_label": threat_label,
                     "color_bgr": color_bgr
                 }
@@ -192,7 +208,7 @@ class TacticalDetector:
 
     @staticmethod
     def _draw_tactical_bbox(frame, x1, y1, x2, y2, color, label, conf):
-        """Menggambar bounding box bergaya Tactical Corner Reticle (murni klasifikasi & confidence)."""
+        """Menggambar bounding box bergaya Tactical Corner Reticle."""
         box_w = x2 - x1
         box_h = y2 - y1
         corner_len = int(min(box_w, box_h) * 0.25)
@@ -238,4 +254,4 @@ class TacticalDetector:
         cv2.line(frame, (20, h - 20), (20 + border_len, h - 20), hud_color, 2)
         cv2.line(frame, (20, h - 20), (20, h - 20 - border_len), hud_color, 2)
         cv2.line(frame, (w - 20, h - 20), (w - 20 - border_len, h - 20), hud_color, 2)
-        cv2.line(frame, (w - 20, h - 20), (w - 20, h - 20 - border_len), hud_color, 2)
+        cv2.line(frame, (w - 20, h - 20), (w - 20 - border_len, h - 20), hud_color, 2)
