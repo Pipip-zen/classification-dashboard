@@ -1,10 +1,10 @@
 """
 Page: 1_Live_Surveillance.py
 Deskripsi:
-    TACTICAL COMMAND COCKPIT (MILITARY-GRADE HUD)
+    TACTICAL COMMAND COCKPIT (FOKUS MURNI IMAGE CLASSIFICATION & OBJECT DETECTION)
     Pemisahan Mode Operasional Penuh:
-    - 🔵 MODE ROV: Danau, Eksplorasi, & Games Bawah Air
-    - 🟢 MODE DRONE: Pemantauan Udara & Spectator Tim A vs Tim B
+    - 🔵 MODE ROV: Danau & Eksplorasi Bawah Air (Submarine, Biota/Ikan, Karang, ROV, Kapal)
+    - 🟢 MODE DRONE: Pemantauan Udara & Spectator (Prajurit Tim A vs Tim B, Kendaraan, Sipil)
 """
 
 import time
@@ -22,7 +22,6 @@ except ImportError:
 
 from core.detector import TacticalDetector
 from core.stream_capture import StreamCapture
-from core.distance_estimator import DistanceEstimator
 
 st.set_page_config(page_title="Tactical Cockpit", page_icon="🛡️", layout="wide")
 
@@ -31,12 +30,10 @@ st.set_page_config(page_title="Tactical Cockpit", page_icon="🛡️", layout="w
 # =========================================================================
 st.markdown("""
 <style>
-    /* Global Military HUD Background */
     .stApp {
         background-color: #06090F;
     }
     
-    /* Top Mission Header Banner */
     .tactical-header {
         background: linear-gradient(90deg, rgba(19, 28, 46, 0.9) 0%, rgba(10, 14, 23, 0.95) 100%);
         border: 1px solid #1E293B;
@@ -65,7 +62,6 @@ st.markdown("""
         font-weight: bold;
     }
     
-    /* Glassmorphism Tactical Cards */
     .hud-card {
         background: rgba(15, 23, 42, 0.75);
         border: 1px solid rgba(51, 65, 85, 0.6);
@@ -76,7 +72,6 @@ st.markdown("""
         box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.5);
     }
     
-    /* Scoreboard Spectator (Drone Mode) */
     .scoreboard-box {
         display: flex;
         justify-content: space-around;
@@ -106,7 +101,6 @@ st.markdown("""
         letter-spacing: 1px;
     }
 
-    /* Pulsing Threat Alert */
     @keyframes pulse-red {
         0% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.7); }
         70% { box-shadow: 0 0 0 10px rgba(255, 59, 48, 0); }
@@ -149,11 +143,11 @@ if "detector" not in st.session_state:
 detector: TacticalDetector = st.session_state.detector
 
 # =========================================================================
-# MISSION COCKPIT SELECTOR (ROV DANAU/GAMES vs DRONE SPECTATOR)
+# MISSION COCKPIT SELECTOR (ROV DANAU vs DRONE SPECTATOR)
 # =========================================================================
 mode_selection = st.radio(
-    "PILIH COCKPIT MISI OPERASIONAL:",
-    ["🔵 ROV COCKPIT: DANAU & EKSPLORASI / GAMES", "🟢 DRONE COCKPIT: SPECTATOR UDARA & RECONNAISSANCE"],
+    "PILIH COCKPIT KLASIFIKASI CITRA:",
+    ["🔵 ROV COCKPIT: DANAU & EKSPLORASI BAWAH AIR", "🟢 DRONE COCKPIT: SPECTATOR UDARA & DARAT"],
     horizontal=True
 )
 
@@ -162,52 +156,42 @@ active_mode_code = "rov" if is_rov_mode else "drone"
 
 # Status Banner Taktis
 hud_accent = "#00E5FF" if is_rov_mode else "#00FF66"
-vehicle_name = "ROV SUB-SURFACE TACTICAL UNIT" if is_rov_mode else "DRONE AERIAL SPECTATOR RECON"
-mission_objective = "DANAU PATROL & UNDERWATER OBJECT INSPECTION" if is_rov_mode else "HEAD-TO-HEAD SPECTATOR: TIM A vs TIM B TRACKER"
+vehicle_name = "ROV LAKE VISION CLASSIFIER" if is_rov_mode else "DRONE SPECTATOR RECON CLASSIFIER"
+mission_objective = "DETEKSI & KLASIFIKASI CITRA OBJEK DANAU / BAWAH AIR" if is_rov_mode else "SPECTATOR TIM A VS TIM B & OBJEK DARAT"
 
 st.markdown(f"""
 <div class="tactical-header" style="border-left-color: {hud_accent};">
     <div>
         <div class="tactical-title" style="color: {hud_accent};">⚔️ {vehicle_name}</div>
-        <div style="font-size: 0.8rem; color: #94A3B8; font-family: monospace;">MISI: {mission_objective}</div>
+        <div style="font-size: 0.8rem; color: #94A3B8; font-family: monospace;">FOKUS: {mission_objective}</div>
     </div>
     <div style="text-align: right;">
         <span class="tactical-badge" style="background: rgba(0, 229, 255, 0.15); color: {hud_accent}; border: 1px solid {hud_accent};">
-            LINK STATUS: 99.8% OPTIMAL
+            CLASSIFICATION ENGINE: ACTIVE
         </span>
         <div style="font-size: 0.75rem; color: #64748B; font-family: monospace; margin-top: 4px;">
-            FREQ: 5.8 GHz // SYS_TIME: {datetime.now().strftime('%H:%M:%S')}
+            SYS_TIME: {datetime.now().strftime('%H:%M:%S')} // MODEL: YOLOv8n
         </div>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
 # =========================================================================
-# SIDEBAR KONTROL & OPTIK
+# SIDEBAR KONTROL SENSOR AI
 # =========================================================================
 with st.sidebar:
-    st.markdown(f"### 🎛️ KONTROL WAHANA ({'ROV' if is_rov_mode else 'DRONE'})")
+    st.markdown(f"### 🎛️ INPUT STREAM ({'ROV' if is_rov_mode else 'DRONE'})")
     feed_mode = st.radio(
-        "Sumber Input Stream:",
-        ["Virtual Testbench (Simulasi)", "Screen Mirroring (Window Software)", "Direct USB / RTSP Stream"]
+        "Sumber Input Visual:",
+        ["Virtual Testbench (Simulasi Video)", "Screen Mirroring (Window Software)", "Direct USB / RTSP Stream"]
     )
 
     st.divider()
-    st.markdown("### 🎯 PARAMETER SENSOR AI")
-    conf_val = st.slider("Confidence Gate", 0.10, 0.90, 0.35, 0.05)
+    st.markdown("### 🎯 PARAMETER KLASIFIKASI")
+    conf_val = st.slider("Confidence Gate (Ambang Batas)", 0.10, 0.90, 0.35, 0.05)
     detector.conf_threshold = conf_val
 
-    enable_dist = st.toggle("Kalkulasi Jarak Pinhole", value=True)
     draw_reticle = st.toggle("Tactical HUD Reticle Crosshair", value=True)
-
-    default_cam = "rov_underwater_flat" if is_rov_mode else "fpv_drone_wide"
-    camera_opt = st.selectbox(
-        "Profil Optik Kamera:",
-        list(DistanceEstimator.CAMERA_PROFILES.keys()),
-        index=list(DistanceEstimator.CAMERA_PROFILES.keys()).index(default_cam),
-        format_func=lambda k: DistanceEstimator.CAMERA_PROFILES[k]["name"]
-    )
-    detector.distance_estimator.set_camera_profile(camera_opt)
 
     st.divider()
     st.markdown("### 📸 REKAMAN PATROLI (STITCHING)")
@@ -217,19 +201,18 @@ with st.sidebar:
         st.session_state.patrol_keyframes = []
 
 # =========================================================================
-# LAYOUT UTAMA: VIDEO HUD + TELEMETRI COCKPIT
+# LAYOUT UTAMA: VIDEO HUD + TELEMETRI KLASIFIKASI
 # =========================================================================
 col_hud, col_sidebar_telemetry = st.columns([7, 3])
 
 with col_sidebar_telemetry:
-    st.markdown("#### 📡 INSTRUMEN TELEMETRI")
+    st.markdown("#### 📊 STATUS KLASIFIKASI CITRA")
 
-    # Placeholder Telemetri Dinamis
     alert_placeholder = st.empty()
-    metric_placeholder_1 = st.empty()
-    metric_placeholder_2 = st.empty()
-    metric_placeholder_3 = st.empty()
-    scoreboard_placeholder = st.empty()
+    metric_total = st.empty()
+    metric_hazard = st.empty()
+    metric_neutral = st.empty()
+    breakdown_placeholder = st.empty()
     fps_placeholder = st.empty()
 
 with col_hud:
@@ -242,7 +225,7 @@ is_active = False
 video_dir = Path("testbench_samples/videos")
 default_vid_name = "rov_underwater_patrol.mp4" if is_rov_mode else "drone_land_recon.mp4"
 
-if feed_mode == "Virtual Testbench (Simulasi)":
+if feed_mode == "Virtual Testbench (Simulasi Video)":
     target_vid_file = video_dir / default_vid_name
     all_vids = list(video_dir.glob("*.mp4"))
 
@@ -291,7 +274,7 @@ elif feed_mode == "Direct USB / RTSP Stream":
         is_active = stream_cap.open_camera(idx)
 
 # =========================================================================
-# STREAMING LOOP WITH TACTICAL TELEMETRY UPDATE
+# STREAMING LOOP WITH PURE CLASSIFICATION TELEMETRY
 # =========================================================================
 if is_active:
     stop_stream_btn = st.button("⏹️ ABORT MISSION / STOP STREAM", use_container_width=True)
@@ -299,11 +282,9 @@ if is_active:
     last_cap = time.time()
     snapshots_dir = Path("testbench_samples/patrol_snapshots")
     snapshots_dir.mkdir(parents=True, exist_ok=True)
-    frame_idx = 0
 
     while not stop_stream_btn:
-        frame_idx += 1
-        if feed_mode == "Virtual Testbench (Simulasi)":
+        if feed_mode == "Virtual Testbench (Simulasi Video)":
             ret, frame = stream_cap.read_virtual_loop_frame()
         elif feed_mode == "Screen Mirroring (Window Software)":
             win = st.session_state.get("mirror_win")
@@ -325,10 +306,10 @@ if is_active:
             last_cap = t_now
             cv2.imwrite(str(snapshots_dir / f"keyframe_{int(t_now)}.jpg"), frame)
 
-        # AI INFERENCE DENGAN FILTER MODE OPERASIONAL
+        # AI INFERENCE (MURNI IMAGE CLASSIFICATION & OBJECT DETECTION)
         results = detector.detect(
             frame,
-            enable_distance=enable_dist,
+            enable_distance=False,
             mode=active_mode_code,
             draw_hud_reticle=draw_reticle
         )
@@ -342,7 +323,7 @@ if is_active:
         # RENDER VIDEO KE HUD
         stream_placeholder.image(cv2.cvtColor(annotated_bgr, cv2.COLOR_BGR2RGB), channels="RGB", use_container_width=True)
 
-        # RENDER TELEMETRI TAKTIS KHUSUS WAHANA
+        # RENDER TELEMETRI STATUS ANCAMAN
         if results["hazard_count"] > 0:
             alert_placeholder.markdown(f"""
             <div class="alert-hazard">
@@ -356,41 +337,32 @@ if is_active:
             </div>
             """, unsafe_allow_html=True)
 
+        # METRIK MURNI KLASIFIKASI CITRA
+        total_detected = len(results["detections"])
+        metric_total.metric("🎯 Total Objek Terdeteksi", f"{total_detected} Objek", delta=f"Domain: {results['environment']}")
+        metric_hazard.metric("🚨 Target Bahaya (Hazard)", f"{results['hazard_count']} Target", delta="Kategori Militer/Waspada")
+        metric_neutral.metric("🟢 Target Netral / Aman", f"{results['neutral_count']} Objek", delta="Kategori Non-Militer")
+
         if is_rov_mode:
-            # TELEMETRI ROV DANAU & GAMES
-            sim_depth = 12.4 + 1.8 * np.sin(frame_idx * 0.05)
-            sim_temp = 24.2 + 0.5 * np.cos(frame_idx * 0.03)
-            lake_score = results["rov_stats"]["coral_reef"] * 10 + results["rov_stats"]["submarine"] * 50
-
-            metric_placeholder_1.metric("🌊 Kedalaman Air (Depth)", f"{sim_depth:.1f} m", delta="Lake Pressure 2.2 bar")
-            metric_placeholder_2.metric("🌡️ Suhu Air Danau", f"{sim_temp:.1f} °C", delta="Visibility: Clear")
-            metric_placeholder_3.metric("🎯 Game Exploration Score", f"{lake_score} PTS", delta=f"{len(results['detections'])} Objek Ditemukan")
-
-            scoreboard_placeholder.markdown(f"""
+            # RINCIAN KLASIFIKASI OBJEK DANAU / BAWAH AIR
+            breakdown_placeholder.markdown(f"""
             <div class="hud-card">
                 <div style="font-size: 0.75rem; color: #00E5FF; font-family: monospace; font-weight: bold; margin-bottom: 6px;">
-                    🐟 REKAP TARGET DANAU
+                    🐟 RINCIAN KLASIFIKASI OBJEK DANAU
                 </div>
                 <div style="font-size: 0.85rem; color: #E2E8F0; font-family: monospace;">
                     • Submarine/Ranjau : <b>{results['rov_stats']['submarine']}</b> unit<br/>
-                    • Biota / Ikan     : <b>{results['rov_stats']['marine_life']}</b> ekor<br/>
+                    • Biota Laut/Ikan   : <b>{results['rov_stats']['marine_life']}</b> ekor<br/>
                     • Terumbu Karang   : <b>{results['rov_stats']['coral_reef']}</b> titik<br/>
-                    • Friendly ROV     : <b>{results['rov_stats']['rov']}</b> unit
+                    • Friendly ROV     : <b>{results['rov_stats']['rov']}</b> unit<br/>
+                    • Kapal/Perahu     : <b>{results['rov_stats']['ship']}</b> unit
                 </div>
             </div>
             """, unsafe_allow_html=True)
 
         else:
-            # TELEMETRI DRONE AERIAL SPECTATOR & RECON
-            sim_alt = 52.0 + 4.0 * np.cos(frame_idx * 0.04)
-            sim_spd = 21.5 + 2.0 * np.sin(frame_idx * 0.08)
-
-            metric_placeholder_1.metric("🛰️ Ketinggian Terbang (ALT)", f"{sim_alt:.1f} m", delta="Barometric Lock")
-            metric_placeholder_2.metric("⚡ Kecepatan Jelajah (SPD)", f"{sim_spd:.1f} km/h", delta="Ground Drift: 0.2m/s")
-            metric_placeholder_3.metric("👥 Total Personel Darat", f"{results['drone_stats']['team_a'] + results['drone_stats']['team_b'] + results['drone_stats']['civilian']} Orang")
-
-            # PAPAN SKOR SPECTATOR PERTEMPURAN TIM A VS TIM B
-            scoreboard_placeholder.markdown(f"""
+            # RINCIAN KLASIFIKASI SPECTATOR DRONE (TIM A VS TIM B)
+            breakdown_placeholder.markdown(f"""
             <div class="hud-card">
                 <div style="font-size: 0.75rem; color: #00FF66; font-family: monospace; font-weight: bold;">
                     ⚔️ SPECTATOR HEAD-TO-HEAD TRACKER
@@ -413,7 +385,7 @@ if is_active:
             </div>
             """, unsafe_allow_html=True)
 
-        fps_placeholder.caption(f"Engine Status: Online // {int(fps)} FPS // Latency: {1000.0/fps:.1f} ms")
+        fps_placeholder.caption(f"Classification Engine: Online // {int(fps)} FPS // Latency: {1000.0/fps:.1f} ms")
         time.sleep(0.01)
 
     stream_cap.release()
