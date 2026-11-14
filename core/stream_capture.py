@@ -3,8 +3,9 @@ Module: core/stream_capture.py
 Deskripsi:
     Penanganan berbagai jenis stream input:
     1. Screen Mirroring / Desktop Window Capture (untuk view ROV/Drone software)
-    2. Direct Camera / Webcam / RTSP
-    3. Virtual Video Testbench (looping offline video untuk pengujian mingguan)
+    2. Network Stream UDP / RTSP (Protokol video stream bawaan ROV & Drone)
+    3. Direct USB Camera / Webcam
+    4. Virtual Video Testbench (looping offline video untuk pengujian mingguan)
 """
 
 import cv2
@@ -26,11 +27,41 @@ class StreamCapture:
             self.sct = mss.mss()
 
     def open_camera(self, camera_index: int = 0) -> bool:
+        """Membuka koneksi direct camera USB / webcam."""
         self.release()
         self.cap = cv2.VideoCapture(camera_index)
         return self.cap.isOpened()
 
+    def open_network_stream(self, stream_url: str) -> bool:
+        """
+        Membuka network video stream (UDP / RTSP / HTTP).
+        Mendukung protokol UDP bawaan ROV (misal: udp://@:5600, udp://192.168.2.1:5600, udp://127.0.0.1:5600).
+        """
+        self.release()
+        clean_url = stream_url.strip()
+
+        # Tuning khusus stream UDP H.264 ROV agar low-latency dan anti-packet drop
+        if clean_url.startswith("udp://"):
+            # Jika belum ada parameter buffer di URL, tambahkan buffer & overrun tuning
+            if "?" not in clean_url:
+                tuned_url = f"{clean_url}?overrun_nonfatal=1&fifo_size=50000000"
+            else:
+                tuned_url = clean_url
+
+            # Coba backend FFMPEG
+            self.cap = cv2.VideoCapture(tuned_url, cv2.CAP_FFMPEG)
+            if self.cap.isOpened():
+                return True
+
+        # Fallback coba buka direct URL
+        self.cap = cv2.VideoCapture(clean_url, cv2.CAP_FFMPEG)
+        if not self.cap.isOpened():
+            self.cap = cv2.VideoCapture(clean_url)
+
+        return self.cap.isOpened()
+
     def open_video_file(self, video_path: str) -> bool:
+        """Membuka file video lokal (MP4/AVI)."""
         self.release()
         self.cap = cv2.VideoCapture(video_path)
         return self.cap.isOpened()
@@ -71,4 +102,3 @@ class StreamCapture:
         if self.cap is not None:
             self.cap.release()
             self.cap = None
-

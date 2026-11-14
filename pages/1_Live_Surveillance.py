@@ -183,7 +183,12 @@ with st.sidebar:
     st.markdown(f"### 🎛️ INPUT STREAM ({'ROV' if is_rov_mode else 'DRONE'})")
     feed_mode = st.radio(
         "Sumber Input Visual:",
-        ["Virtual Testbench (Simulasi Video)", "Screen Mirroring (Window Software)", "Direct USB / RTSP Stream"]
+        [
+            "Virtual Testbench (Simulasi Video)",
+            "Screen Mirroring (Window Software)",
+            "Network Stream (UDP / RTSP - ROV Link)",
+            "Direct USB Webcam"
+        ]
     )
 
     st.divider()
@@ -267,11 +272,53 @@ elif feed_mode == "Screen Mirroring (Window Software)":
     else:
         st.warning("Pustaka pygetwindow tidak mendeteksi window aktif.")
 
-elif feed_mode == "Direct USB / RTSP Stream":
-    cam_source = st.text_input("Index Kamera USB (0/1) atau URL RTSP:", value="0")
-    if st.button("▶️ BUKA STREAM", type="primary"):
-        idx = int(cam_source) if cam_source.isdigit() else cam_source
-        is_active = stream_cap.open_camera(idx)
+elif feed_mode == "Network Stream (UDP / RTSP - ROV Link)":
+    st.markdown("##### 📡 ROV / Drone Network Video Link (UDP Protocol)")
+    st.info("💡 **Catatan ROV:** Umumnya video stream ROV dikirim melalui protokol UDP H.264 (port default 5600). Pastikan port tidak diblokir firewall.")
+    
+    # Preset links for quick selection
+    preset_cols = st.columns(3)
+    preset_chosen = None
+    if preset_cols[0].button("Presets: udp://@:5600 (ROV All Interfaces)", use_container_width=True):
+        st.session_state["udp_input_val"] = "udp://@:5600"
+    if preset_cols[1].button("Presets: udp://192.168.2.1:5600 (Companion IP)", use_container_width=True):
+        st.session_state["udp_input_val"] = "udp://192.168.2.1:5600"
+    if preset_cols[2].button("Presets: udp://127.0.0.1:5600 (Loopback)", use_container_width=True):
+        st.session_state["udp_input_val"] = "udp://127.0.0.1:5600"
+
+    default_udp = st.session_state.get("udp_input_val", "udp://@:5600")
+    
+    c_net1, c_net2 = st.columns([3, 1])
+    with c_net1:
+        net_stream_url = st.text_input(
+            "Masukkan Network Stream Link (UDP / RTSP):",
+            value=default_udp,
+            placeholder="udp://@:5600 atau udp://192.168.2.1:5600"
+        )
+    with c_net2:
+        st.write("")
+        st.write("")
+        start_net_btn = st.button("▶️ ENGAGE UDP STREAM", type="primary", use_container_width=True)
+
+    if start_net_btn and net_stream_url.strip():
+        with st.spinner(f"Menghubungkan ke stream {net_stream_url}..."):
+            is_active = stream_cap.open_network_stream(net_stream_url.strip())
+            if not is_active:
+                st.error(f"❌ Gagal membuka stream dari {net_stream_url}. Pastikan ROV aktif menyiarkan paket UDP.")
+
+elif feed_mode == "Direct USB Webcam":
+    c_cam1, c_cam2 = st.columns([3, 1])
+    with c_cam1:
+        cam_source = st.number_input("Index Perangkat Kamera USB:", min_value=0, max_value=5, value=0, step=1)
+    with c_cam2:
+        st.write("")
+        st.write("")
+        start_cam_btn = st.button("▶️ BUKA WEBCAM", type="primary", use_container_width=True)
+
+    if start_cam_btn:
+        is_active = stream_cap.open_camera(int(cam_source))
+        if not is_active:
+            st.error(f"❌ Gagal mengakses kamera USB index {cam_source}.")
 
 # =========================================================================
 # STREAMING LOOP WITH PURE CLASSIFICATION TELEMETRY
