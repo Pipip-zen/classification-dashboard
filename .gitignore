@@ -7,7 +7,7 @@ env/
 .venv/
 *.env
 
-# DATASETS (PENTING: Jangan push ribuan gambar & label ke GitHub)
+# DATASETS (PENTING: Jangan push ribuan gambar & label mentah ke GitHub)
 data/**/images/
 data/**/labels/
 *.cache
@@ -17,11 +17,14 @@ data/*.tar.gz
 !data/unified_dataset/data.yaml
 
 # MODEL WEIGHTS & TRAINING RUNS
-*.pt
+# Abaikan model run mentah dan bobot sementara, namun simpan bobot resmi best.pt
+models/tactical_yolo_run/
+yolov8n.pt
+last.pt
 *.pth
 *.onnx
 *.engine
-models/*
+!models/best.pt
 !models/.gitkeep
 
 # TRAINING OUTPUTS & LOGS (YOLO runs)
@@ -32,8 +35,7 @@ wandb/
 # CACHE & TEMPORARY FILES
 .ipynb_checkpoints/
 *.tmp
-testbench_samples/videos/*.mp4
-testbench_samples/videos/*.avi
+testbench_samples/patrol_snapshots/
 
 # OS generated
 .DS_Store
