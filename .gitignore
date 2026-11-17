@@ -20,6 +20,7 @@ data/*.tar.gz
 # Abaikan model run mentah dan bobot sementara, namun simpan bobot resmi best.pt
 models/tactical_yolo_run/
 yolov8n.pt
+yolov8n-oiv7.pt
 last.pt
 *.pth
 *.onnx

@@ -16,17 +16,17 @@ from typing import Dict, Any, List, Tuple, Set
 
 
 class ThreatEvaluator:
-    # Taksonomi terpadu 9 kelas
+    # Taksonomi terpadu 11 kelas (ROV Danau + Drone Aerial Spectator)
     TAXONOMY = {
         0: {
             "name": "soldier",
-            "display": "Orang / Person",
+            "display": "Prajurit / Soldier",
             "domain": "Land",
             "allowed_modes": {"drone", "all"},
             "threat": "HAZARD",
-            "threat_label": "Personel (Akan dievaluasi warna baju)",
-            "color_bgr": (255, 153, 0),    # Default Biru/Cyan
-            "color_hex": "#0099FF",
+            "threat_label": "Kombatan / Target Taktis",
+            "color_bgr": (0, 0, 255),      # Merah Taktis (#FF3B30)
+            "color_hex": "#FF3B30",
             "ref_width_m": 0.5
         },
         1: {
@@ -35,19 +35,19 @@ class ThreatEvaluator:
             "domain": "Land",
             "allowed_modes": {"drone", "all"},
             "threat": "NEUTRAL",
-            "threat_label": "Kendaraan Umum (Mobil/Truk/Darat)",
-            "color_bgr": (3, 183, 255),    # Oranye / Amber Umum
+            "threat_label": "Kendaraan Tempur / Transport",
+            "color_bgr": (3, 183, 255),    # Oranye / Amber (#FFB703)
             "color_hex": "#FFB703",
             "ref_width_m": 2.5
         },
         2: {
             "name": "civilian",
-            "display": "Orang / Person",
+            "display": "Warga Sipil / Civilian",
             "domain": "Land",
             "allowed_modes": {"drone", "all"},
             "threat": "NEUTRAL",
-            "threat_label": "Sipil / Non-Tim",
-            "color_bgr": (0, 255, 0),      # Hijau
+            "threat_label": "Warga Sipil / Non-Kombatan",
+            "color_bgr": (0, 255, 0),      # Hijau Aman (#34C759)
             "color_hex": "#34C759",
             "ref_width_m": 0.5
         },
@@ -116,11 +116,33 @@ class ThreatEvaluator:
             "color_bgr": (0, 255, 102),
             "color_hex": "#00FF66",
             "ref_width_m": 0.4
+        },
+        9: {
+            "name": "tree",
+            "display": "Pohon / Vegetasi",
+            "domain": "Land",
+            "allowed_modes": {"drone", "all"},
+            "threat": "NEUTRAL",
+            "threat_label": "Lanskap / Vegetasi Darat",
+            "color_bgr": (34, 139, 34),    # Forest Green
+            "color_hex": "#228B22",
+            "ref_width_m": 3.0
+        },
+        10: {
+            "name": "building",
+            "display": "Bangunan / Struktur",
+            "domain": "Land",
+            "allowed_modes": {"drone", "all"},
+            "threat": "NEUTRAL",
+            "threat_label": "Struktur / Bangunan Darat",
+            "color_bgr": (211, 211, 211),  # Abu-abu Cerah
+            "color_hex": "#D3D3D3",
+            "ref_width_m": 10.0
         }
     }
 
     ROV_ALLOWED_CLASSES: Set[int] = {3, 4, 5, 6, 7}
-    DRONE_ALLOWED_CLASSES: Set[int] = {0, 1, 2, 3, 8}
+    DRONE_ALLOWED_CLASSES: Set[int] = {0, 1, 2, 3, 8, 9, 10}
 
     @classmethod
     def is_class_allowed_for_mode(cls, class_id: int, mode: str) -> bool:

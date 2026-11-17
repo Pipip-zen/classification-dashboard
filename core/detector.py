@@ -71,7 +71,14 @@ class TacticalDetector:
         h, w = frame.shape[:2]
         detections: List[Dict[str, Any]] = []
 
-        drone_stats = {"team_a": 0, "team_b": 0, "civilian": 0, "military_vehicle": 0}
+        drone_stats = {
+            "soldier": 0,
+            "civilian": 0,
+            "military_vehicle": 0,
+            "tree": 0,
+            "building": 0,
+            "fpv_drone": 0
+        }
         rov_stats = {"submarine": 0, "marine_life": 0, "coral_reef": 0, "rov": 0, "ship": 0}
 
         if not self.model_loaded or self.model is None:
@@ -143,28 +150,13 @@ class TacticalDetector:
                 color_bgr = info["color_bgr"]
                 threat_status = info["threat"]
 
-                # STAGE 2: Pembedaan Tim A (Biru) vs Tim B (Ungu) vs Sipil (Lainnya)
-                if cls_id in (0, 2) and box_w > 10 and box_h > 10:
-                    person_crop = frame[y1:y2, x1:x2]
-                    t_name, t_label, t_bgr, _ = ThreatEvaluator.classify_soldier_team(person_crop)
-                    display_name = t_name
-                    threat_label = t_label
-                    color_bgr = t_bgr
-
-                    if "TIM A" in t_name:
-                        drone_stats["team_a"] += 1
-                        threat_status = "HAZARD" # Ditandai khusus Tim A
-                    elif "TIM B" in t_name:
-                        drone_stats["team_b"] += 1
-                        threat_status = "HAZARD" # Ditandai khusus Tim B
-                    else:
-                        drone_stats["civilian"] += 1
-                        threat_status = "NEUTRAL" # Warga Sipil / Netral
-
+                # PENCATATAN STATISTIK TAKTIS BERDASARKAN KELAS MURNI (TANPA OVERRIDE WARNA BAJU)
+                if cls_id == 0:
+                    drone_stats["soldier"] += 1
                 elif cls_id == 1:
                     drone_stats["military_vehicle"] += 1
-                    display_name = "Kendaraan / Vehicle"
-                    color_bgr = (3, 183, 255) # Amber umum
+                elif cls_id == 2:
+                    drone_stats["civilian"] += 1
                 elif cls_id == 3:
                     rov_stats["ship"] += 1
                 elif cls_id == 4:
@@ -175,6 +167,12 @@ class TacticalDetector:
                     rov_stats["coral_reef"] += 1
                 elif cls_id == 7:
                     rov_stats["rov"] += 1
+                elif cls_id == 8:
+                    drone_stats["fpv_drone"] += 1
+                elif cls_id == 9:
+                    drone_stats["tree"] += 1
+                elif cls_id == 10:
+                    drone_stats["building"] += 1
 
                 is_hazard = (threat_status == "HAZARD")
                 if is_hazard:

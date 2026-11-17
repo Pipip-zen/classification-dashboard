@@ -2,7 +2,7 @@ path: D:/Pelajaran/Kuliah/SMT 5/Workshop Kecerdasan Buatan/Projek/data/unified_d
 train: train/images
 val: valid/images
 test: test/images
-nc: 9
+nc: 11
 names:
   0: soldier
   1: military_vehicle
@@ -13,3 +13,5 @@ names:
   6: coral_reef
   7: rov
   8: fpv_drone
+  9: tree
+  10: building

@@ -157,7 +157,7 @@ active_mode_code = "rov" if is_rov_mode else "drone"
 # Status Banner Taktis
 hud_accent = "#00E5FF" if is_rov_mode else "#00FF66"
 vehicle_name = "ROV LAKE VISION CLASSIFIER" if is_rov_mode else "DRONE SPECTATOR RECON CLASSIFIER"
-mission_objective = "DETEKSI & KLASIFIKASI CITRA OBJEK DANAU / BAWAH AIR" if is_rov_mode else "SPECTATOR TIM A VS TIM B & OBJEK DARAT"
+mission_objective = "DETEKSI & KLASIFIKASI CITRA OBJEK DANAU / BAWAH AIR" if is_rov_mode else "PENGAWASAN UDARA TAKTIS: SOLDIER, CIVILIAN & AERIAL LANDSCAPE"
 
 st.markdown(f"""
 <div class="tactical-header" style="border-left-color: {hud_accent};">
@@ -408,26 +408,27 @@ if is_active:
             """, unsafe_allow_html=True)
 
         else:
-            # RINCIAN KLASIFIKASI SPECTATOR DRONE (TIM A BIRU VS TIM B UNGU)
+            # RINCIAN KLASIFIKASI SPECTATOR DRONE (SOLDIER, CIVILIAN, VEHICLE, TREES & BUILDINGS)
             breakdown_placeholder.markdown(f"""
             <div class="hud-card">
-                <div style="font-size: 0.75rem; color: #00FF66; font-family: monospace; font-weight: bold;">
-                    ⚔️ SPECTATOR HEAD-TO-HEAD TRACKER
+                <div style="font-size: 0.75rem; color: #00FF66; font-family: monospace; font-weight: bold; margin-bottom: 8px;">
+                    🚁 RINCIAN DETEKSI RECON DRONE
                 </div>
-                <div class="scoreboard-box">
-                    <div>
-                        <div class="score-team-a">{results['drone_stats']['team_a']}</div>
-                        <div class="score-label">TIM A (BIRU)</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+                    <div style="background: rgba(255, 59, 48, 0.15); border: 1px solid #FF3B30; border-radius: 6px; padding: 8px; text-align: center;">
+                        <div style="color: #FF3B30; font-family: monospace; font-size: 1.4rem; font-weight: bold;">{results['drone_stats'].get('soldier', 0)}</div>
+                        <div style="font-size: 0.68rem; color: #FFA39E; font-weight: bold; letter-spacing: 1px;">SOLDIER (KOMBATAN)</div>
                     </div>
-                    <div style="font-size: 1.2rem; color: #475569; align-self: center;">VS</div>
-                    <div>
-                        <div class="score-team-b">{results['drone_stats']['team_b']}</div>
-                        <div class="score-label">TIM B (UNGU)</div>
+                    <div style="background: rgba(52, 199, 89, 0.15); border: 1px solid #34C759; border-radius: 6px; padding: 8px; text-align: center;">
+                        <div style="color: #34C759; font-family: monospace; font-size: 1.4rem; font-weight: bold;">{results['drone_stats'].get('civilian', 0)}</div>
+                        <div style="font-size: 0.68rem; color: #A3F0B8; font-weight: bold; letter-spacing: 1px;">CIVILIAN (SIPIL)</div>
                     </div>
                 </div>
-                <div style="font-size: 0.8rem; color: #94A3B8; font-family: monospace; margin-top: 8px;">
-                    • Kendaraan / Vehicle : <b>{results['drone_stats']['military_vehicle']}</b> unit<br/>
-                    • Warga Sipil / Netral: <b>{results['drone_stats']['civilian']}</b> orang
+                <div style="font-size: 0.8rem; color: #94A3B8; font-family: monospace; line-height: 1.6;">
+                    • Kendaraan / Vehicle : <b>{results['drone_stats'].get('military_vehicle', 0)}</b> unit<br/>
+                    • Pohon / Vegetasi     : <b>{results['drone_stats'].get('tree', 0)}</b> titik<br/>
+                    • Bangunan / Struktur  : <b>{results['drone_stats'].get('building', 0)}</b> unit<br/>
+                    • Drone Udara (FPV)    : <b>{results['drone_stats'].get('fpv_drone', 0)}</b> unit
                 </div>
             </div>
             """, unsafe_allow_html=True)

@@ -30,13 +30,13 @@ def train():
     # Menggunakan pre-trained YOLOv8 Nano (cepat, ringan & akurat)
     model = YOLO("yolov8n.pt")
 
-    # Hyperparameter yang dioptimalkan untuk workshop
+    # Hyperparameter yang dioptimalkan untuk workshop CPU/GPU ringan
     results = model.train(
         data=str(data_yaml),
-        epochs=35,            # 35 epochs cukup untuk konvergensi transfer learning
-        imgsz=640,
-        batch=16,             # Turunkan ke 8 jika memori GPU kecil
-        patience=8,           # Early stopping jika tidak membaik dalam 8 epoch
+        epochs=20,            # 20 epochs optimal untuk transfer learning cepat
+        imgsz=480,            # Resolusi 480x480 agar inferensi & training CPU cepat
+        batch=16,
+        patience=6,           # Early stopping jika tidak membaik dalam 6 epoch
         save=True,
         project=str(models_dir),
         name="tactical_yolo_run",
