@@ -95,6 +95,8 @@ with st.sidebar:
         st.toast("✅ Bobot model AI terbaru berhasil dimuat!")
         st.rerun()
 
+    show_labels_toggle = st.toggle("🏷️ Tampilkan Teks Label Objek", value=True, help="Matikan untuk mode stealth/layar bersih tanpa teks label.")
+
     if mode_code in ["rov", "all"]:
         clahe_toggle = st.toggle(
             "Underwater CLAHE Enhancer",
@@ -129,7 +131,13 @@ with tab_img:
         img_to_process = cv2.imread(str(sample_dir / chosen_sample))
 
     if img_to_process is not None:
-        results = detector.detect(img_to_process, enable_distance=False, mode=mode_code, enable_clahe=clahe_toggle)
+        results = detector.detect(
+            img_to_process,
+            enable_distance=False,
+            mode=mode_code,
+            enable_clahe=clahe_toggle,
+            show_labels=show_labels_toggle
+        )
         annotated = results["annotated_frame"]
         detections = results["detections"]
 
@@ -224,7 +232,13 @@ with tab_video:
 
                 frame_count += 1
                 if frame_count % 2 == 0:
-                    res = detector.detect(frame, enable_distance=False, mode=mode_code, enable_clahe=clahe_toggle)
+                    res = detector.detect(
+                        frame,
+                        enable_distance=False,
+                        mode=mode_code,
+                        enable_clahe=clahe_toggle,
+                        show_labels=show_labels_toggle
+                    )
                     annotated_v = res["annotated_frame"]
 
                     video_placeholder.image(

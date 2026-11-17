@@ -212,6 +212,11 @@ with st.sidebar:
         st.rerun()
 
     draw_reticle = st.toggle("Tactical HUD Reticle Crosshair", value=True)
+    show_labels_toggle = st.toggle(
+        "🏷️ Tampilkan Teks Label Objek",
+        value=True,
+        help="Matikan untuk mode stealth/layar bersih (hanya reticle kotak sudut tanpa teks banner tebal)."
+    )
     if is_rov_mode:
         clahe_toggle = st.toggle(
             "Underwater CLAHE Enhancer",
@@ -428,7 +433,8 @@ if is_active:
             enable_distance=False,
             mode=active_mode_code,
             draw_hud_reticle=draw_reticle,
-            enable_clahe=clahe_toggle
+            enable_clahe=clahe_toggle,
+            show_labels=show_labels_toggle
         )
         annotated_bgr = results["annotated_frame"]
 

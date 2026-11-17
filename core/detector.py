@@ -32,6 +32,22 @@ from core.threat_evaluator import ThreatEvaluator
 
 
 class TacticalDetector:
+    # Ambang batas proteksi minimum per kelas (mencegah noise sporadis pada confidence rendah)
+    CLASS_CONFIDENCE_FLOOR = {
+        0: 0.20,  # soldier / kombatan
+        1: 0.20,  # military_vehicle / kendaraan umum
+        2: 0.20,  # civilian / pejalan kaki / pengendara
+        8: 0.20,  # fpv_drone
+        3: 0.20,  # ship
+        4: 0.20,  # submarine
+        5: 0.18,  # marine_life
+        6: 0.18,  # coral_reef
+        7: 0.20,  # rov
+        11: 0.20, # diver
+        9: 0.15,  # tree / kanopi vegetasi
+        10: 0.15  # building / struktur bangunan
+    }
+
     def __init__(
         self,
         model_path: Optional[str] = None,
@@ -81,13 +97,15 @@ class TacticalDetector:
         enable_distance: bool = False,
         mode: str = "all",
         draw_hud_reticle: bool = True,
-        enable_clahe: bool = False
+        enable_clahe: bool = False,
+        show_labels: bool = True
     ) -> Dict[str, Any]:
         """
         Melakukan inferensi taktis berfokus murni pada Image Classification & Localization:
         - mode='rov': Menampilkan target danau/bawah air (Submarine, Ikan, Karang, ROV, Kapal, Diver)
         - mode='drone': Menampilkan target POV umum (Soldier, Civilian, Vehicle, Kapal, Tree, Building, FPV)
         - enable_clahe: Toggle real-time underwater CLAHE enhancer (sesuai kebutuhan video)
+        - show_labels: Toggle visibilitas teks label untuk layar bersih (clean HUD)
         """
         # Hot-reloading jika file bobot model di disk diperbarui
         if self.model_path:
@@ -149,11 +167,12 @@ class TacticalDetector:
         if draw_hud_reticle:
             self._draw_tactical_hud_overlay(annotated_frame, mode)
 
-        # Jalankan inferensi YOLO
+        # Jalankan inferensi YOLO dengan Class-Agnostic NMS untuk mencegah tumpukan box multi-kelas
         results = self.model.predict(
             source=infer_frame,
-            conf=self.conf_threshold,
-            iou=self.iou_threshold,
+            conf=min(self.conf_threshold, 0.15),
+            iou=0.35,
+            agnostic_nms=True,
             device=self.device,
             verbose=False
         )
@@ -161,6 +180,7 @@ class TacticalDetector:
         detected_class_ids = []
         hazard_count = 0
         neutral_count = 0
+        render_queue = []
 
         if results and len(results) > 0:
             boxes = results[0].boxes
@@ -173,19 +193,25 @@ class TacticalDetector:
                 if not ThreatEvaluator.is_class_allowed_for_mode(cls_id, mode):
                     continue
 
+                # FILTER 2: SMART CONFIDENCE FLOOR (Proteksi Cerdas Noise Ambang Rendah)
+                min_floor = self.CLASS_CONFIDENCE_FLOOR.get(cls_id, 0.20)
+                effective_conf = max(self.conf_threshold, min_floor)
+                if conf < effective_conf:
+                    continue
+
                 x1, y1, x2, y2 = xyxy
                 x1, y1 = max(0, x1), max(0, y1)
                 x2, y2 = min(w, x2), min(h, y2)
                 box_w = x2 - x1
                 box_h = y2 - y1
 
-                # FILTER 2: AMBANG BATAS KHUSUS KENDARAAN (ADAPTIF UNTUK DRONE KETINGGIAN TINGGI)
+                # FILTER 3: AMBANG BATAS KHUSUS KENDARAAN (ADAPTIF UNTUK DRONE KETINGGIAN TINGGI)
                 if cls_id == 1:
                     min_area = 150 if mode.lower() == "drone" else 500
                     if (box_w * box_h) < min_area:
                         continue # Abaikan noise artefak sangat kecil (< 150 px)
 
-                # FILTER 3: SANITASI KLASIFIKASI BAWAH AIR (ANTI-MISKLASIFIKASI SUBMARINE PADA IKAN)
+                # FILTER 4: SANITASI KLASIFIKASI BAWAH AIR (ANTI-MISKLASIFIKASI SUBMARINE PADA IKAN)
                 if mode.lower() in ["rov", "all"]:
                     cls_id = ThreatEvaluator.sanitize_underwater_target(
                         class_id=cls_id,
@@ -247,9 +273,20 @@ class TacticalDetector:
                     "color_bgr": color_bgr
                 }
                 detections.append(det_item)
+                render_queue.append((x1, y1, x2, y2, color_bgr, display_name, conf))
 
-                # Gambar Corner Reticle Bounding Box Taktis
-                self._draw_tactical_bbox(annotated_frame, x1, y1, x2, y2, color_bgr, display_name, conf)
+        # RENDER VISUAL ADAPTIF: Otomatis aktifkan compact_mode jika objek > 12 agar layar tidak tertutup
+        is_crowded = len(render_queue) > 12
+        for (x1, y1, x2, y2, color_bgr, display_name, conf) in render_queue:
+            self._draw_tactical_bbox(
+                annotated_frame,
+                x1, y1, x2, y2,
+                color_bgr,
+                display_name,
+                conf,
+                show_label=show_labels,
+                compact_mode=is_crowded
+            )
 
         env_domain, _ = ThreatEvaluator.determine_environment(detected_class_ids, mode=mode)
 
@@ -264,12 +301,12 @@ class TacticalDetector:
         }
 
     @staticmethod
-    def _draw_tactical_bbox(frame, x1, y1, x2, y2, color, label, conf):
-        """Menggambar bounding box bergaya Tactical Corner Reticle."""
+    def _draw_tactical_bbox(frame, x1, y1, x2, y2, color, label, conf, show_label=True, compact_mode=False):
+        """Menggambar bounding box bergaya Tactical Corner Reticle dengan adaptasi visual terhadap kepadatan."""
         box_w = x2 - x1
         box_h = y2 - y1
         corner_len = int(min(box_w, box_h) * 0.25)
-        thickness = 2
+        thickness = 1 if compact_mode else 2
 
         # 4 Sudut Taktis
         cv2.line(frame, (x1, y1), (x1 + corner_len, y1), color, thickness)
@@ -283,13 +320,24 @@ class TacticalDetector:
 
         cv2.rectangle(frame, (x1, y1), (x2, y2), color, 1)
 
-        # Label Klasifikasi & Confidence Murni
-        osd_text = f"{label} [{int(conf * 100)}%]"
+        if not show_label:
+            return
 
-        (tw, th), _ = cv2.getTextSize(osd_text, cv2.FONT_HERSHEY_SIMPLEX, 0.45, 1)
-        cv2.rectangle(frame, (x1, max(0, y1 - 22)), (x1 + tw + 6, max(0, y1)), (10, 14, 23), -1)
-        cv2.rectangle(frame, (x1, max(0, y1 - 22)), (x1 + tw + 6, max(0, y1)), color, 1)
-        cv2.putText(frame, osd_text, (x1 + 3, max(14, y1 - 6)), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 255, 255), 1, cv2.LINE_AA)
+        if compact_mode:
+            # Mode Ringkas: badge mini teks tanpa blok hitam besar agar video tetap jernih
+            short_name = label.split("/")[0].strip()
+            osd_text = f"{short_name} {int(conf * 100)}%"
+            tx = x1 + 2
+            ty = max(11, y1 - 3)
+            cv2.putText(frame, osd_text, (tx, ty), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0, 0, 0), 2, cv2.LINE_AA)
+            cv2.putText(frame, osd_text, (tx, ty), cv2.FONT_HERSHEY_SIMPLEX, 0.35, color, 1, cv2.LINE_AA)
+        else:
+            # Mode Standar: badge taktis hitam ber-border
+            osd_text = f"{label} [{int(conf * 100)}%]"
+            (tw, th), _ = cv2.getTextSize(osd_text, cv2.FONT_HERSHEY_SIMPLEX, 0.45, 1)
+            cv2.rectangle(frame, (x1, max(0, y1 - 22)), (x1 + tw + 6, max(0, y1)), (10, 14, 23), -1)
+            cv2.rectangle(frame, (x1, max(0, y1 - 22)), (x1 + tw + 6, max(0, y1)), color, 1)
+            cv2.putText(frame, osd_text, (x1 + 3, max(14, y1 - 6)), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 255, 255), 1, cv2.LINE_AA)
 
     @staticmethod
     def _draw_tactical_hud_overlay(frame, mode: str):
