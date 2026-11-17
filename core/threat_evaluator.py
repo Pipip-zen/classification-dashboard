@@ -138,10 +138,21 @@ class ThreatEvaluator:
             "color_bgr": (211, 211, 211),  # Abu-abu Cerah
             "color_hex": "#D3D3D3",
             "ref_width_m": 10.0
+        },
+        11: {
+            "name": "diver",
+            "display": "Penyelam / Diver",
+            "domain": "Underwater",
+            "allowed_modes": {"rov", "all"},
+            "threat": "NEUTRAL",
+            "threat_label": "Penyelam Bawah Air (Scuba Diver)",
+            "color_bgr": (0, 180, 255),    # Biru Langit Cerah (#FFB400 di RGB)
+            "color_hex": "#00B4FF",
+            "ref_width_m": 0.6
         }
     }
 
-    ROV_ALLOWED_CLASSES: Set[int] = {3, 4, 5, 6, 7}
+    ROV_ALLOWED_CLASSES: Set[int] = {3, 4, 5, 6, 7, 11}
     DRONE_ALLOWED_CLASSES: Set[int] = {0, 1, 2, 3, 8, 9, 10}
 
     @classmethod

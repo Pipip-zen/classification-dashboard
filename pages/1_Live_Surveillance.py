@@ -454,11 +454,12 @@ if is_active:
                     🐟 RINCIAN KLASIFIKASI OBJEK DANAU
                 </div>
                 <div style="font-size: 0.85rem; color: #E2E8F0; font-family: monospace;">
-                    • Submarine/Ranjau : <b>{results['rov_stats']['submarine']}</b> unit<br/>
-                    • Biota Laut/Ikan   : <b>{results['rov_stats']['marine_life']}</b> ekor<br/>
-                    • Terumbu Karang   : <b>{results['rov_stats']['coral_reef']}</b> titik<br/>
-                    • Friendly ROV     : <b>{results['rov_stats']['rov']}</b> unit<br/>
-                    • Kapal/Perahu     : <b>{results['rov_stats']['ship']}</b> unit
+                    • Submarine/Ranjau : <b>{results['rov_stats'].get('submarine', 0)}</b> unit<br/>
+                    • Biota Laut/Ikan   : <b>{results['rov_stats'].get('marine_life', 0)}</b> ekor<br/>
+                    • Terumbu Karang   : <b>{results['rov_stats'].get('coral_reef', 0)}</b> titik<br/>
+                    • Penyelam (Diver) : <b>{results['rov_stats'].get('diver', 0)}</b> orang<br/>
+                    • Friendly ROV     : <b>{results['rov_stats'].get('rov', 0)}</b> unit<br/>
+                    • Kapal/Perahu     : <b>{results['rov_stats'].get('ship', 0)}</b> unit
                 </div>
             </div>
             """, unsafe_allow_html=True)

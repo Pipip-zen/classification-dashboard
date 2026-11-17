@@ -79,7 +79,18 @@ class TacticalDetector:
             "building": 0,
             "fpv_drone": 0
         }
-        rov_stats = {"submarine": 0, "marine_life": 0, "coral_reef": 0, "rov": 0, "ship": 0}
+        rov_stats = {"submarine": 0, "marine_life": 0, "coral_reef": 0, "rov": 0, "ship": 0, "diver": 0}
+
+        # Real-time Underwater Vision Enhancer (Permanen di Mode ROV untuk confidence >= 80%)
+        if mode.lower() == "rov":
+            infer_frame = self.enhance_underwater_frame(frame)
+            annotated_frame = infer_frame.copy()
+        else:
+            infer_frame = frame
+            annotated_frame = frame.copy()
+
+        h, w = frame.shape[:2]
+        detections: List[Dict[str, Any]] = []
 
         if not self.model_loaded or self.model is None:
             cv2.putText(
@@ -107,7 +118,7 @@ class TacticalDetector:
 
         # Jalankan inferensi YOLO
         results = self.model.predict(
-            source=frame,
+            source=infer_frame,
             conf=self.conf_threshold,
             iou=self.iou_threshold,
             device=self.device,
@@ -173,6 +184,8 @@ class TacticalDetector:
                     drone_stats["tree"] += 1
                 elif cls_id == 10:
                     drone_stats["building"] += 1
+                elif cls_id == 11:
+                    rov_stats["diver"] += 1
 
                 is_hazard = (threat_status == "HAZARD")
                 if is_hazard:
@@ -256,3 +269,27 @@ class TacticalDetector:
         cv2.line(frame, (20, h - 20), (20, h - 20 - border_len), hud_color, 2)
         cv2.line(frame, (w - 20, h - 20), (w - 20 - border_len, h - 20), hud_color, 2)
         cv2.line(frame, (w - 20, h - 20), (w - 20, h - 20 - border_len), hud_color, 2)
+
+    @staticmethod
+    def enhance_underwater_frame(frame: np.ndarray) -> np.ndarray:
+        """
+        Real-time Underwater Vision Enhancer (CLAHE + Color Balance).
+        Mengeliminasi kekeruhan/kabut hijau dan menajamkan kontras terumbu karang,
+        biota laut, dan penyelam agar deteksi lebih tajam dan confidence >= 80%.
+        """
+        if frame is None or frame.size == 0:
+            return frame
+
+        # Konversi ke LAB Color Space
+        lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
+        l_chan, a_chan, b_chan = cv2.split(lab)
+
+        # CLAHE adaptif pada Lightness channel
+        clahe = cv2.createCLAHE(clipLimit=2.2, tileGridSize=(8, 8))
+        cl = clahe.apply(l_chan)
+
+        # Re-balance kanal warna agar tidak terlalu hijau kusam
+        a_balanced = cv2.addWeighted(a_chan, 1.08, np.full_like(a_chan, 128), -0.08, 0)
+
+        enhanced_lab = cv2.merge((cl, a_balanced, b_chan))
+        return cv2.cvtColor(enhanced_lab, cv2.COLOR_LAB2BGR)

@@ -147,7 +147,14 @@ with tab_img:
                     f"Gedung: **{results['drone_stats'].get('building', 0)}**"
                 )
             elif mode_code == "rov":
-                st.info(f"🐟 **Objek Danau:** Ikan/Biota: **{results['rov_stats']['marine_life']}** | Karang: **{results['rov_stats']['coral_reef']}** | Submarine: **{results['rov_stats']['submarine']}**")
+                st.info(
+                    f"🐟 **Objek Danau:** "
+                    f"Biota/Ikan: **{results['rov_stats'].get('marine_life', 0)}** | "
+                    f"Karang: **{results['rov_stats'].get('coral_reef', 0)}** | "
+                    f"Penyelam: **{results['rov_stats'].get('diver', 0)}** | "
+                    f"Submarine: **{results['rov_stats'].get('submarine', 0)}** | "
+                    f"ROV: **{results['rov_stats'].get('rov', 0)}**"
+                )
 
             st.divider()
             st.markdown("#### Rincian Log Klasifikasi Citra:")
