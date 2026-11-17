@@ -43,6 +43,7 @@ def test_threat_evaluator():
     assert ThreatEvaluator.is_class_allowed_for_mode(10, "drone"), "Building harus aktif di Mode Drone"
     assert not ThreatEvaluator.is_class_allowed_for_mode(6, "drone"), "Coral reef tidak boleh aktif di Mode Drone"
     assert not ThreatEvaluator.is_class_allowed_for_mode(11, "drone"), "Diver tidak boleh aktif di Mode Drone"
+    assert not ThreatEvaluator.is_class_allowed_for_mode(3, "drone"), "Perahu/kapal tidak boleh aktif di Mode Drone"
     assert not ThreatEvaluator.is_class_allowed_for_mode(9, "rov"), "Tree tidak boleh aktif di Mode ROV"
 
     print(" [PASSED]")

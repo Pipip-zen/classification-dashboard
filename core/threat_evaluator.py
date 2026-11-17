@@ -53,11 +53,11 @@ class ThreatEvaluator:
         },
         3: {
             "name": "ship",
-            "display": "Perahu / Kapal Danau",
+            "display": "Perahu / Kapal Permukaan",
             "domain": "Surface Water",
-            "allowed_modes": {"rov", "drone", "all"},
+            "allowed_modes": {"rov", "all"},
             "threat": "NEUTRAL",
-            "threat_label": "Wahana Permukaan Danau",
+            "threat_label": "Wahana Permukaan Air",
             "color_bgr": (0, 165, 255),    # Oranye
             "color_hex": "#FF9500",
             "ref_width_m": 8.0
@@ -153,7 +153,7 @@ class ThreatEvaluator:
     }
 
     ROV_ALLOWED_CLASSES: Set[int] = {3, 4, 5, 6, 7, 11}
-    DRONE_ALLOWED_CLASSES: Set[int] = {0, 1, 2, 3, 8, 9, 10}
+    DRONE_ALLOWED_CLASSES: Set[int] = {0, 1, 2, 8, 9, 10}
 
     @classmethod
     def sanitize_underwater_target(
