@@ -185,6 +185,7 @@ with st.sidebar:
         "Sumber Input Visual:",
         [
             "Virtual Testbench (Simulasi Video)",
+            "YouTube Video / Live Stream",
             "Screen Mirroring (Window Software)",
             "Network Stream (UDP / RTSP - ROV Link)",
             "Direct USB Webcam"
@@ -250,6 +251,33 @@ if feed_mode == "Virtual Testbench (Simulasi Video)":
     if start_btn:
         is_active = stream_cap.open_video_file(str(chosen_vid))
 
+elif feed_mode == "YouTube Video / Live Stream":
+    st.markdown("##### 🔴 YouTube Online Video / Live Stream Input")
+    st.caption("Mendukung URL video rekaman maupun siaran langsung (Live) via FFMPEG & yt-dlp.")
+    c_yt1, c_yt2, c_yt3 = st.columns([3, 1, 1])
+    with c_yt1:
+        yt_input_url = st.text_input(
+            "Masukkan Link Video / Live YouTube:",
+            placeholder="https://www.youtube.com/watch?v=..."
+        )
+    with c_yt2:
+        yt_res_choice = st.selectbox("Kualitas:", ["720p (Responsif)", "480p (Ultra Ringan)", "1080p (HD)"])
+        max_h = 480 if "480p" in yt_res_choice else (1080 if "1080p" in yt_res_choice else 720)
+    with c_yt3:
+        st.write("")
+        st.write("")
+        start_yt_btn = st.button("▶️ ENGAGE YOUTUBE", type="primary", use_container_width=True)
+
+    if start_yt_btn and yt_input_url.strip():
+        with st.spinner("Mengekstrak stream YouTube via yt-dlp..."):
+            success, title_or_err = stream_cap.open_youtube_stream(yt_input_url.strip(), max_height=max_h)
+            if success:
+                is_active = True
+                st.session_state["yt_stream_title"] = title_or_err
+                st.success(f"🎬 Terhubung: {title_or_err}")
+            else:
+                st.error(f"❌ {title_or_err}")
+
 elif feed_mode == "Screen Mirroring (Window Software)":
     window_titles = []
     if GW_AVAILABLE:
@@ -258,19 +286,33 @@ elif feed_mode == "Screen Mirroring (Window Software)":
     if window_titles:
         w_sel1, w_sel2 = st.columns([3, 1])
         with w_sel1:
-            selected_window_title = st.selectbox("Pilih Window Aplikasi Aktif:", window_titles)
+            selected_window_title = st.selectbox("Pilih Window Software Aktif:", window_titles)
         with w_sel2:
             st.write("")
             st.write("")
             start_mirror = st.button("▶️ ENGAGE MIRROR", type="primary", use_container_width=True)
 
         if start_mirror:
-            target_win = gw.getWindowsWithTitle(selected_window_title)[0]
-            if target_win:
-                is_active = True
-                st.session_state["mirror_win"] = target_win
+            matching_windows = gw.getWindowsWithTitle(selected_window_title)
+            if matching_windows:
+                target_win = matching_windows[0]
+                # Otomatis bawa window target ke paling depan (Bring to Front) agar tidak tertutup
+                try:
+                    if target_win.isMinimized:
+                        target_win.restore()
+                    target_win.activate()
+                    time.sleep(0.3)
+                except Exception:
+                    pass
+
+                if target_win.width > 50 and target_win.height > 50:
+                    is_active = True
+                    st.session_state["mirror_win"] = target_win
+                    st.session_state["mirror_title"] = target_win.title
+                else:
+                    st.error("Window yang dipilih tidak memiliki dimensi valid atau sedang terminimasi.")
     else:
-        st.warning("Pustaka pygetwindow tidak mendeteksi window aktif.")
+        st.warning("Pustaka pygetwindow tidak mendeteksi window aktif di sesi ini.")
 
 elif feed_mode == "Network Stream (UDP / RTSP - ROV Link)":
     st.markdown("##### 📡 ROV / Drone Network Video Link (UDP Protocol)")
@@ -336,7 +378,14 @@ if is_active:
         elif feed_mode == "Screen Mirroring (Window Software)":
             win = st.session_state.get("mirror_win")
             if win:
-                frame = stream_cap.capture_screen_region(top=win.top, left=win.left, width=win.width, height=win.height)
+                frame = stream_cap.capture_screen_region(
+                    top=win.top,
+                    left=win.left,
+                    width=win.width,
+                    height=win.height,
+                    target_max_w=1280,
+                    target_max_h=720
+                )
                 ret = (frame is not None)
             else:
                 ret = False
@@ -434,6 +483,6 @@ if is_active:
             """, unsafe_allow_html=True)
 
         fps_placeholder.caption(f"Classification Engine: Online // {int(fps)} FPS // Latency: {1000.0/fps:.1f} ms")
-        time.sleep(0.01)
+        time.sleep(0.02)
 
     stream_cap.release()

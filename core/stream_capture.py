@@ -83,20 +83,86 @@ class StreamCapture:
 
         return ret, frame
 
+    def open_youtube_stream(self, youtube_url: str, max_height: int = 720) -> Tuple[bool, str]:
+        """
+        Mengekstrak dan membuka live stream atau video dari YouTube menggunakan yt-dlp.
+        Menggunakan format bestvideo teroptimasi (max 720p) agar ringan dan responsif.
+        """
+        self.release()
+        clean_url = youtube_url.strip()
+        if not clean_url:
+            return False, "URL YouTube kosong."
+
+        try:
+            import yt_dlp
+        except ImportError:
+            return False, "Pustaka 'yt-dlp' belum terinstal."
+
+        ydl_opts = {
+            'format': f'bestvideo[height<={max_height}]/bestvideo/best',
+            'quiet': True,
+            'no_warnings': True,
+            'noplaylist': True,
+        }
+
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(clean_url, download=False)
+                stream_url = info.get('url')
+                title = info.get('title', 'YouTube Video')
+
+                if not stream_url:
+                    return False, "Tidak dapat mengekstrak direct stream URL dari video ini."
+
+                # Buka direct video stream URL di OpenCV via FFMPEG backend
+                self.cap = cv2.VideoCapture(stream_url, cv2.CAP_FFMPEG)
+                if not self.cap.isOpened():
+                    self.cap = cv2.VideoCapture(stream_url)
+
+                if self.cap.isOpened():
+                    return True, title
+                else:
+                    return False, "OpenCV gagal membuka stream URL YouTube."
+        except Exception as e:
+            return False, f"Gagal mengekstrak YouTube: {str(e)}"
+
     def capture_screen_region(
         self,
         top: int = 100,
         left: int = 100,
         width: int = 1280,
-        height: int = 720
+        height: int = 720,
+        target_max_w: int = 1280,
+        target_max_h: int = 720
     ) -> Optional[np.ndarray]:
         if not MSS_AVAILABLE or self.sct is None:
             return None
 
-        monitor = {"top": top, "left": left, "width": width, "height": height}
-        sct_img = self.sct.grab(monitor)
-        frame = np.array(sct_img)
-        return cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
+        # Validasi batas koordinat agar tidak crash jika window berkoordinat negatif / minimized
+        if width <= 50 or height <= 50:
+            return None
+        safe_top = max(0, int(top))
+        safe_left = max(0, int(left))
+        safe_width = max(100, int(width))
+        safe_height = max(100, int(height))
+
+        monitor = {"top": safe_top, "left": safe_left, "width": safe_width, "height": safe_height}
+        try:
+            sct_img = self.sct.grab(monitor)
+            frame = np.array(sct_img)
+            bgr = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
+
+            # Optimasi Performa: Downscale jika resolusi window melebihi 720p (mengurangi lag CPU)
+            cur_h, cur_w = bgr.shape[:2]
+            if cur_w > target_max_w or cur_h > target_max_h:
+                scale = min(target_max_w / cur_w, target_max_h / cur_h)
+                new_w = int(cur_w * scale)
+                new_h = int(cur_h * scale)
+                bgr = cv2.resize(bgr, (new_w, new_h), interpolation=cv2.INTER_AREA)
+
+            return bgr
+        except Exception:
+            return None
 
     def release(self):
         if self.cap is not None:
