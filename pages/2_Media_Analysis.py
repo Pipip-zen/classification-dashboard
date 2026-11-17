@@ -17,6 +17,13 @@ from datetime import datetime
 from pathlib import Path
 from PIL import Image
 
+import importlib
+import core.detector
+import core.threat_evaluator
+
+importlib.reload(core.threat_evaluator)
+importlib.reload(core.detector)
+
 from core.detector import TacticalDetector
 
 st.set_page_config(page_title="Media Analysis", page_icon="🎞️", layout="wide")

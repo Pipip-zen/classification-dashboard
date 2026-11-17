@@ -20,6 +20,15 @@ try:
 except ImportError:
     GW_AVAILABLE = False
 
+import importlib
+import core.stream_capture
+import core.detector
+import core.threat_evaluator
+
+importlib.reload(core.stream_capture)
+importlib.reload(core.threat_evaluator)
+importlib.reload(core.detector)
+
 from core.detector import TacticalDetector
 from core.stream_capture import StreamCapture
 
