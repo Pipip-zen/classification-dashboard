@@ -195,6 +195,7 @@ with st.sidebar:
         [
             "Virtual Testbench (Simulasi Video)",
             "YouTube Video / Live Stream",
+            "TikTok Live Stream",
             "Screen Mirroring (Window Software)",
             "Network Stream (UDP / RTSP - ROV Link)",
             "Direct USB Webcam"
@@ -304,6 +305,39 @@ elif feed_mode == "YouTube Video / Live Stream":
                 st.success(f"🎬 Terhubung: {title_or_err}")
             else:
                 st.error(f"❌ {title_or_err}")
+
+elif feed_mode == "TikTok Live Stream":
+    st.markdown("##### 📱 TikTok Live Stream Recon")
+    st.info(
+        "💡 **Cara Menghubungkan TikTok Live:**  \n"
+        "- Masukkan username kreator (misal: `@username` atau `username`) atau URL lengkap (`https://www.tiktok.com/@username/live`).  \n"
+        "- Anda juga dapat menempelkan *Direct Pull Stream URL* (HLS `.m3u8` / HTTP-FLV) jika memiliki link internal stream.  \n"
+        "- *Catatan:* Jika akun menerapkan verifikasi bot/CAPTCHA, gunakan mode **Screen Mirroring (Window Software)** sebagai alternatif 100% lancar."
+    )
+
+    c_tt1, c_tt2 = st.columns([3, 1])
+    with c_tt1:
+        tiktok_input_val = st.text_input(
+            "Masukkan Akun / URL TikTok Live:",
+            value=st.session_state.get("tt_input_url", ""),
+            placeholder="@username atau https://www.tiktok.com/@username/live"
+        )
+    with c_tt2:
+        st.write("")
+        st.write("")
+        start_tt_btn = st.button("▶️ ENGAGE TIKTOK", type="primary", use_container_width=True)
+
+    if start_tt_btn and tiktok_input_val.strip():
+        st.session_state["tt_input_url"] = tiktok_input_val.strip()
+        with st.spinner("Menghubungkan ke stream TikTok Live..."):
+            success, title_or_err = stream_cap.open_tiktok_stream(tiktok_input_val.strip())
+            if success:
+                is_active = True
+                st.session_state["tt_stream_title"] = title_or_err
+                st.success(f"📱 Terhubung: {title_or_err}")
+            else:
+                st.error(f"❌ {title_or_err}")
+                st.info("💡 **Solusi Alternatif Bebas Blokir:** Buka live TikTok di browser Anda (Chrome/Edge), lalu beralih ke menu **Screen Mirroring (Window Software)** di sidebar untuk menangkap layarnya secara langsung tanpa terpengaruh proteksi TikTok!")
 
 elif feed_mode == "Screen Mirroring (Window Software)":
     window_titles = []

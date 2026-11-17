@@ -170,6 +170,79 @@ class StreamCapture:
         except Exception as e:
             return False, f"Gagal mengekstrak YouTube: {str(e)}"
 
+    def open_tiktok_stream(self, tiktok_input: str) -> Tuple[bool, str]:
+        """
+        Mengekstrak dan membuka live stream TikTok:
+        - Menerima format:
+          1. https://www.tiktok.com/@username/live
+          2. @username atau username
+          3. Direct pull stream URL (FLV / M3U8)
+        """
+        self.release()
+        clean_input = tiktok_input.strip()
+        if not clean_input:
+            return False, "Input target TikTok kosong."
+
+        # 1. Direct pull URL (FLV / M3U8)
+        if clean_input.startswith("http://") or clean_input.startswith("https://"):
+            if ".flv" in clean_input or ".m3u8" in clean_input or "pull" in clean_input:
+                self.cap = cv2.VideoCapture(clean_input, cv2.CAP_FFMPEG)
+                if not self.cap.isOpened():
+                    self.cap = cv2.VideoCapture(clean_input)
+                if self.cap.isOpened():
+                    self.cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+                    return True, "Direct TikTok FLV/HLS Stream"
+
+        # 2. Format URL akun TikTok
+        if clean_input.startswith("@"):
+            tiktok_url = f"https://www.tiktok.com/{clean_input}/live"
+        elif not clean_input.startswith("http://") and not clean_input.startswith("https://"):
+            tiktok_url = f"https://www.tiktok.com/@{clean_input}/live"
+        else:
+            tiktok_url = clean_input
+
+        try:
+            import yt_dlp
+        except ImportError:
+            return False, "Pustaka 'yt-dlp' belum terinstal."
+
+        ydl_opts = {
+            'format': 'best',
+            'quiet': True,
+            'no_warnings': True,
+            'noplaylist': True,
+            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
+
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(tiktok_url, download=False)
+                stream_url = info.get('url')
+                title = info.get('title') or info.get('uploader') or clean_input
+
+                if not stream_url:
+                    formats = info.get('formats', [])
+                    if formats:
+                        stream_url = formats[-1].get('url')
+
+                if not stream_url:
+                    return False, "Tidak dapat menemukan link video stream. Kemungkinan siaran langsung sedang offline atau akun diprivat."
+
+                self.cap = cv2.VideoCapture(stream_url, cv2.CAP_FFMPEG)
+                if not self.cap.isOpened():
+                    self.cap = cv2.VideoCapture(stream_url)
+
+                if self.cap.isOpened():
+                    self.cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+                    return True, f"Live @{title}"
+                else:
+                    return False, "OpenCV gagal membuka stream URL TikTok."
+        except Exception as e:
+            err_msg = str(e)
+            if "offline" in err_msg.lower():
+                return False, "Kreator saat ini sedang OFFLINE. Pastikan akun sedang menyiarkan Live."
+            return False, f"Gagal mengekstrak stream TikTok: {err_msg}"
+
     def capture_screen_region(
         self,
         top: int = 100,
