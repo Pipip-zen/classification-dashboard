@@ -1,0 +1,12 @@
+v=0
+s=exploreHD-AI-Dashboard-Secondary
+i=UDP stream endpoint khusus AI Dashboard (port 5602 - bebas konflik Cockpit)
+t=0 0
+a=tool:mavlink-camera-manager
+a=type:broadcast
+a=recvonly
+m=video 5602 RTP/AVP 96
+c=IN IP4 192.168.2.3
+a=rtpmap:96 H264/90000
+a=framerate:30
+a=fmtp:96 packetization-mode=1;sprop-parameter-sets=Z0JAKZZUA8ARPyo=,aM44gA==;profile-level-id=424029;level-asymmetry-allowed=1
