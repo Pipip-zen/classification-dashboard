@@ -131,7 +131,14 @@ with tab_img:
             m_col2.metric("🟢 Target Netral (Aman)", results["neutral_count"])
 
             if mode_code == "drone":
-                st.info(f"⚔️ **Spectator Score:** Tim A: **{results['drone_stats']['team_a']}** | Tim B: **{results['drone_stats']['team_b']}** | Sipil: **{results['drone_stats']['civilian']}**")
+                st.info(
+                    f"🚁 **Statistik Drone:** "
+                    f"Prajurit (Soldier): **{results['drone_stats'].get('soldier', 0)}** | "
+                    f"Sipil (Civilian): **{results['drone_stats'].get('civilian', 0)}** | "
+                    f"Kendaraan: **{results['drone_stats'].get('military_vehicle', 0)}** | "
+                    f"Pohon: **{results['drone_stats'].get('tree', 0)}** | "
+                    f"Gedung: **{results['drone_stats'].get('building', 0)}**"
+                )
             elif mode_code == "rov":
                 st.info(f"🐟 **Objek Danau:** Ikan/Biota: **{results['rov_stats']['marine_life']}** | Karang: **{results['rov_stats']['coral_reef']}** | Submarine: **{results['rov_stats']['submarine']}**")
 

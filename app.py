@@ -146,8 +146,8 @@ with col_drone:
             <b>Fungsi Utama:</b> Pemantauan udara sebagai spectator pertempuran, tracking pergerakan personel darat, dan pengawasan lalu lintas permukaan.
         </div>
         <div style="font-size: 0.8rem; color: #94A3B8; font-family: monospace; margin-top: 8px;">
-            • <b>Target Sensor:</b> Prajurit Tim A vs Tim B, Kendaraan Tempur Lapis Baja, Warga Sipil.<br/>
-            • <b>Telemetri:</b> Ketinggian (ALT), Kecepatan (SPD), Papan Skor Spectator Head-to-Head.
+            • <b>Target Sensor:</b> Prajurit (Soldier), Warga Sipil, Kendaraan Tempur/Darat, Pohon & Bangunan.<br/>
+            • <b>Telemetri:</b> Deteksi Kombatan vs Non-Kombatan, Counter Lanskap Aerial, Kepadatan Target.
         </div>
     </div>
     """, unsafe_allow_html=True)
