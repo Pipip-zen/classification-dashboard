@@ -382,9 +382,7 @@ if is_active:
                     top=win.top,
                     left=win.left,
                     width=win.width,
-                    height=win.height,
-                    target_max_w=1280,
-                    target_max_h=720
+                    height=win.height
                 )
                 ret = (frame is not None)
             else:

@@ -132,11 +132,14 @@ class StreamCapture:
         left: int = 100,
         width: int = 1280,
         height: int = 720,
-        target_max_w: int = 1280,
-        target_max_h: int = 720
+        *args,
+        **kwargs
     ) -> Optional[np.ndarray]:
         if not MSS_AVAILABLE or self.sct is None:
             return None
+
+        target_max_w = int(kwargs.get("target_max_w", 1280))
+        target_max_h = int(kwargs.get("target_max_h", 720))
 
         # Validasi batas koordinat agar tidak crash jika window berkoordinat negatif / minimized
         if width <= 50 or height <= 50:
