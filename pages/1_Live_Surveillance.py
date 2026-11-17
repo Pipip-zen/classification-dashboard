@@ -342,38 +342,111 @@ elif feed_mode == "Screen Mirroring (Window Software)":
         st.warning("Pustaka pygetwindow tidak mendeteksi window aktif di sesi ini.")
 
 elif feed_mode == "Network Stream (UDP / RTSP - ROV Link)":
-    st.markdown("##### 📡 ROV / Drone Network Video Link (UDP Protocol)")
-    st.info("💡 **Catatan ROV:** Umumnya video stream ROV dikirim melalui protokol UDP H.264 (port default 5600). Pastikan port tidak diblokir firewall.")
-    
-    # Preset links for quick selection
-    preset_cols = st.columns(3)
-    preset_chosen = None
-    if preset_cols[0].button("Presets: udp://@:5600 (ROV All Interfaces)", use_container_width=True):
-        st.session_state["udp_input_val"] = "udp://@:5600"
-    if preset_cols[1].button("Presets: udp://192.168.2.1:5600 (Companion IP)", use_container_width=True):
-        st.session_state["udp_input_val"] = "udp://192.168.2.1:5600"
-    if preset_cols[2].button("Presets: udp://127.0.0.1:5600 (Loopback)", use_container_width=True):
-        st.session_state["udp_input_val"] = "udp://127.0.0.1:5600"
+    st.markdown("##### 📡 ROV / Drone Network Video Link — BlueOS + Cockpit")
 
-    default_udp = st.session_state.get("udp_input_val", "udp://@:5600")
-    
-    c_net1, c_net2 = st.columns([3, 1])
-    with c_net1:
-        net_stream_url = st.text_input(
-            "Masukkan Network Stream Link (UDP / RTSP):",
-            value=default_udp,
-            placeholder="udp://@:5600 atau udp://192.168.2.1:5600"
+    # === PETUNJUK ARSITEKTUR ===
+    st.info(
+        "💡 **BlueOS + Cockpit Setup:**  \n"
+        "Cockpit (GCS) menggunakan port **5600 (WebRTC internal)**. "
+        "Agar AI Dashboard tidak konflik, BlueOS harus dikonfigurasi dengan **endpoint kedua di port 5602** khusus untuk AI Dashboard.  \n"
+        "Unduh file **.sdp** dari **BlueOS Web UI → Video Streams → Download SDP**, lalu pilih preset SDP di bawah."
+    )
+
+    # === TAB: Pilih metode koneksi ===
+    tab_sdp, tab_rtsp, tab_udp = st.tabs(["📄 File SDP (BlueOS Download)", "📡 RTSP Stream", "🔵 Raw UDP"])
+
+    # --- Tab 1: SDP ---
+    with tab_sdp:
+        st.markdown("**Upload atau masukkan path file `.sdp` yang diunduh dari BlueOS.**")
+        sdp_cols = st.columns([3, 1])
+        with sdp_cols[0]:
+            sdp_path_input = st.text_input(
+                "Path File SDP:",
+                value=st.session_state.get("sdp_path_val", "exploreHD_USB_Camera__exploreHD.sdp"),
+                placeholder="exploreHD_USB_Camera__exploreHD.sdp atau path absolut"
+            )
+        with sdp_cols[1]:
+            st.write("")
+            st.write("")
+            start_sdp_btn = st.button("▶️ ENGAGE SDP STREAM", type="primary", use_container_width=True)
+
+        if start_sdp_btn and sdp_path_input.strip():
+            st.session_state["sdp_path_val"] = sdp_path_input.strip()
+            with st.spinner(f"Membuka stream dari file SDP: {sdp_path_input}..."):
+                is_active = stream_cap.open_sdp_stream(sdp_path_input.strip())
+                if not is_active:
+                    st.error(
+                        f"❌ Gagal membuka SDP dari `{sdp_path_input}`.  \n"
+                        "**Checklist:**  \n"
+                        "- IP laptop = `192.168.2.1` (static)  \n"
+                        "- BlueOS aktif streaming ke port yang tertulis di file SDP  \n"
+                        "- Port UDP tidak diblokir Windows Firewall  \n"
+                        "- File .sdp tersedia di path yang ditulis"
+                    )
+
+    # --- Tab 2: RTSP ---
+    with tab_rtsp:
+        st.markdown("**RTSP direkomendasikan untuk koneksi paling stabil. URL tersedia di BlueOS → Video Streams.**")
+        rtsp_presets = st.columns(2)
+        if rtsp_presets[0].button("Preset: rtsp://192.168.2.2:8554/video0", use_container_width=True):
+            st.session_state["net_input_val"] = "rtsp://192.168.2.2:8554/video0"
+        if rtsp_presets[1].button("Preset: rtsp://192.168.2.2:8554/stream", use_container_width=True):
+            st.session_state["net_input_val"] = "rtsp://192.168.2.2:8554/stream"
+
+        rtsp_cols = st.columns([3, 1])
+        with rtsp_cols[0]:
+            rtsp_url = st.text_input(
+                "Masukkan RTSP URL dari BlueOS:",
+                value=st.session_state.get("net_input_val", "rtsp://192.168.2.2:8554/video0"),
+                placeholder="rtsp://192.168.2.2:8554/video0"
+            )
+        with rtsp_cols[1]:
+            st.write("")
+            st.write("")
+            start_rtsp_btn = st.button("▶️ ENGAGE RTSP", type="primary", use_container_width=True)
+
+        if start_rtsp_btn and rtsp_url.strip():
+            st.session_state["net_input_val"] = rtsp_url.strip()
+            with st.spinner(f"Menghubungkan ke RTSP: {rtsp_url}..."):
+                is_active = stream_cap.open_network_stream(rtsp_url.strip())
+                if not is_active:
+                    st.error(f"❌ Gagal terhubung ke RTSP `{rtsp_url}`. Pastikan BlueOS aktif dan IP ROV dapat di-ping.")
+
+    # --- Tab 3: Raw UDP ---
+    with tab_udp:
+        st.warning(
+            "⚠️ **Cockpit + UDP:** Jika Cockpit sedang aktif, hindari port **5600** (konflik).  \n"
+            "Gunakan **port 5602** (endpoint AI Dashboard terpisah) yang dikonfigurasi di BlueOS → Video Streams → Add Endpoint."
         )
-    with c_net2:
-        st.write("")
-        st.write("")
-        start_net_btn = st.button("▶️ ENGAGE UDP STREAM", type="primary", use_container_width=True)
+        udp_presets = st.columns(3)
+        if udp_presets[0].button("udp://@:5602 (AI Dashboard Port)", use_container_width=True):
+            st.session_state["udp_input_val"] = "udp://@:5602"
+        if udp_presets[1].button("udp://@:5600 (Default BlueOS)", use_container_width=True):
+            st.session_state["udp_input_val"] = "udp://@:5600"
+        if udp_presets[2].button("udp://192.168.2.1:5602 (Target IP)", use_container_width=True):
+            st.session_state["udp_input_val"] = "udp://192.168.2.1:5602"
 
-    if start_net_btn and net_stream_url.strip():
-        with st.spinner(f"Menghubungkan ke stream {net_stream_url}..."):
-            is_active = stream_cap.open_network_stream(net_stream_url.strip())
-            if not is_active:
-                st.error(f"❌ Gagal membuka stream dari {net_stream_url}. Pastikan ROV aktif menyiarkan paket UDP.")
+        udp_cols = st.columns([3, 1])
+        with udp_cols[0]:
+            net_stream_url = st.text_input(
+                "Masukkan UDP URL:",
+                value=st.session_state.get("udp_input_val", "udp://@:5602"),
+                placeholder="udp://@:5602"
+            )
+        with udp_cols[1]:
+            st.write("")
+            st.write("")
+            start_net_btn = st.button("▶️ ENGAGE UDP", type="primary", use_container_width=True)
+
+        if start_net_btn and net_stream_url.strip():
+            st.session_state["udp_input_val"] = net_stream_url.strip()
+            with st.spinner(f"Menghubungkan ke UDP stream {net_stream_url}..."):
+                is_active = stream_cap.open_network_stream(net_stream_url.strip())
+                if not is_active:
+                    st.error(
+                        f"❌ Gagal membuka stream dari `{net_stream_url}`.  \n"
+                        "Pastikan BlueOS telah dikonfigurasi dengan endpoint UDP pada port tersebut."
+                    )
 
 elif feed_mode == "Direct USB Webcam":
     c_cam1, c_cam2 = st.columns([3, 1])
