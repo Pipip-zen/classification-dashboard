@@ -89,6 +89,12 @@ with st.sidebar:
     st.header("⚙️ Parameter Klasifikasi")
     conf_val = st.slider("Confidence Gate", 0.10, 0.90, 0.35, 0.05)
     detector.conf_threshold = conf_val
+
+    if st.button("🔄 Muat Ulang Bobot AI (Reload best.pt)"):
+        st.session_state.detector = TacticalDetector(model_path="models/best.pt", conf_threshold=conf_val)
+        st.toast("✅ Bobot model AI terbaru berhasil dimuat!")
+        st.rerun()
+
     if mode_code in ["rov", "all"]:
         clahe_toggle = st.toggle(
             "Underwater CLAHE Enhancer",

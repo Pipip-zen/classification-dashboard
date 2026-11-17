@@ -41,6 +41,8 @@ class TacticalDetector:
     ):
         self.conf_threshold = conf_threshold
         self.iou_threshold = iou_threshold
+        self.model_path = model_path
+        self._last_mtime: Optional[float] = None
         
         # Auto-detect GPU CUDA jika tersedia
         if device is None:
@@ -65,6 +67,9 @@ class TacticalDetector:
         try:
             self.model = YOLO(str(path_obj))
             self.model_loaded = True
+            self.model_path = str(path_obj)
+            if path_obj.exists():
+                self._last_mtime = path_obj.stat().st_mtime
             return True, f"Model berhasil dimuat dari: {path_obj.name}"
         except Exception as e:
             self.model_loaded = False
@@ -84,6 +89,17 @@ class TacticalDetector:
         - mode='drone': Menampilkan target POV umum (Soldier, Civilian, Vehicle, Kapal, Tree, Building, FPV)
         - enable_clahe: Toggle real-time underwater CLAHE enhancer (sesuai kebutuhan video)
         """
+        # Hot-reloading jika file bobot model di disk diperbarui
+        if self.model_path:
+            p = Path(self.model_path)
+            if p.exists() and self._last_mtime is not None:
+                try:
+                    curr_mtime = p.stat().st_mtime
+                    if curr_mtime > self._last_mtime:
+                        self.load_model(self.model_path)
+                except Exception:
+                    pass
+
         annotated_frame = frame.copy()
         h, w = frame.shape[:2]
         detections: List[Dict[str, Any]] = []
@@ -163,12 +179,11 @@ class TacticalDetector:
                 box_w = x2 - x1
                 box_h = y2 - y1
 
-                # FILTER 2: AMBANG BATAS KHUSUS KENDARAAN (ELIMINASI BESI BIASA / BEBATUAN)
+                # FILTER 2: AMBANG BATAS KHUSUS KENDARAAN (ADAPTIF UNTUK DRONE KETINGGIAN TINGGI)
                 if cls_id == 1:
-                    MIN_VEHICLE_CONF = 0.45
-                    MIN_VEHICLE_AREA = 1200 # piksel kuadrat
-                    if conf < MIN_VEHICLE_CONF or (box_w * box_h) < MIN_VEHICLE_AREA:
-                        continue # Abaikan besi biasa / noise rongsokan
+                    min_area = 150 if mode.lower() == "drone" else 500
+                    if (box_w * box_h) < min_area:
+                        continue # Abaikan noise artefak sangat kecil (< 150 px)
 
                 # FILTER 3: SANITASI KLASIFIKASI BAWAH AIR (ANTI-MISKLASIFIKASI SUBMARINE PADA IKAN)
                 if mode.lower() in ["rov", "all"]:
