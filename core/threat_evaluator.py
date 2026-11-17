@@ -156,6 +156,39 @@ class ThreatEvaluator:
     DRONE_ALLOWED_CLASSES: Set[int] = {0, 1, 2, 3, 8, 9, 10}
 
     @classmethod
+    def sanitize_underwater_target(
+        cls,
+        class_id: int,
+        box_w: int,
+        box_h: int,
+        frame_w: int,
+        frame_h: int,
+        conf: float
+    ) -> int:
+        """
+        Anti-Misclassification Engine Bawah Air:
+        Mencegah ikan laut atau biota kecil disalahartikan sebagai Kapal Selam (Submarine).
+        Kapal Selam taktis adalah wahana militer masif dengan rasio panjang/tinggi tinggi
+        dan footprint visual signifikan (>6% luasan frame atau lebar > 30% layar).
+        Jika objek terdeteksi sebagai submarine namun ukurannya kecil atau proporsinya seperti ikan,
+        maka otomatis direklasifikasi secara cerdas ke kelas 5 (marine_life).
+        """
+        if class_id == 4: # submarine
+            total_frame_area = max(1, frame_w * frame_h)
+            box_area = box_w * box_h
+            area_ratio = box_area / total_frame_area
+            aspect_ratio = max(box_w, box_h) / max(1, min(box_w, box_h))
+
+            # Jika luas bounding box < 6% layar atau lebar box < 25% lebar frame, atau conf < 0.85
+            # maka objek tersebut adalah fauna laut (ikan), BUKAN kapal selam militer!
+            if area_ratio < 0.06 or (box_w < frame_w * 0.25 and box_h < frame_h * 0.25):
+                return 5 # Remap ke marine_life
+            if aspect_ratio < 2.0 and conf < 0.85:
+                return 5 # Remap ke marine_life
+
+        return class_id
+
+    @classmethod
     def is_class_allowed_for_mode(cls, class_id: int, mode: str) -> bool:
         mode_lower = mode.lower()
         if mode_lower == "all":

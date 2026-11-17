@@ -9,6 +9,7 @@ Penggunaan:
 """
 
 from pathlib import Path
+import torch
 from ultralytics import YOLO
 
 
@@ -22,28 +23,37 @@ def train():
         print(f"Error: {data_yaml} tidak ditemukan!")
         return
 
+    device = 0 if torch.cuda.is_available() else "cpu"
+    device_name = torch.cuda.get_device_name(0) if torch.cuda.is_available() else "CPU"
+
     print("==========================================================")
-    print("MEMULAI TRAINING YOLOv8 (TRANSFER LEARNING)")
-    print(f"Dataset YAML: {data_yaml}")
+    print("MEMULAI TRAINING YOLOv8 (GPU ACCELERATED TRANSFER LEARNING)")
+    print(f"Device       : {device} ({device_name})")
+    print(f"Dataset YAML : {data_yaml}")
     print("==========================================================")
 
     target_best = models_dir / "best.pt"
     model_to_start = str(target_best) if target_best.exists() else "yolov8n.pt"
-    print(f"Base Weights: {model_to_start}")
+    print(f"Base Weights : {model_to_start}")
     model = YOLO(model_to_start)
 
-    # Hyperparameter yang dioptimalkan untuk fine-tuning CPU/GPU ringan
+    # Hyperparameter yang dioptimalkan untuk GPU RTX A2000 (4GB VRAM)
     results = model.train(
         data=str(data_yaml),
-        epochs=12,            # 12 epochs fine-tuning cepat & akurat
-        imgsz=480,            # Resolusi 480x480 agar inferensi & training CPU cepat
-        batch=16,
-        patience=5,           # Early stopping jika tidak membaik dalam 5 epoch
+        epochs=15,            # 15 epochs pada GPU hanya ~3-5 menit
+        imgsz=640,            # Resolusi tajam 640x640 untuk detail karang & ikan
+        batch=16,             # Pas untuk 4GB VRAM YOLOv8n
+        device=device,
+        patience=8,           # Early stopping jika tidak membaik dalam 8 epoch
         save=True,
         project=str(models_dir),
         name="tactical_yolo_run",
         exist_ok=True,
-        verbose=True
+        verbose=True,
+        hsv_h=0.015,          # Augmentasi hue spektrum air
+        hsv_s=0.6,            # Augmentasi saturasi
+        hsv_v=0.4,            # Augmentasi kecerahan air
+        fliplr=0.5            # Flip horizontal fauna & karang
     )
 
     # Simpan bobot terbaik ke models/best.pt

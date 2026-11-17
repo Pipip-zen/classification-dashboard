@@ -207,6 +207,14 @@ with st.sidebar:
     detector.conf_threshold = conf_val
 
     draw_reticle = st.toggle("Tactical HUD Reticle Crosshair", value=True)
+    if is_rov_mode:
+        clahe_toggle = st.toggle(
+            "Underwater CLAHE Enhancer",
+            value=False,
+            help="Aktifkan untuk rekaman bawah air yang sangat keruh/gelap/hijau. Matikan untuk video jernih (misal YouTube terumbu karang tropis)."
+        )
+    else:
+        clahe_toggle = False
 
     st.divider()
     st.markdown("### 📸 REKAMAN PATROLI (STITCHING)")
@@ -414,7 +422,8 @@ if is_active:
             frame,
             enable_distance=False,
             mode=active_mode_code,
-            draw_hud_reticle=draw_reticle
+            draw_hud_reticle=draw_reticle,
+            enable_clahe=clahe_toggle
         )
         annotated_bgr = results["annotated_frame"]
 

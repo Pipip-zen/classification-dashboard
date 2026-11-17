@@ -22,6 +22,12 @@ try:
 except ImportError:
     YOLO_AVAILABLE = False
 
+try:
+    import torch
+    TORCH_AVAILABLE = True
+except ImportError:
+    TORCH_AVAILABLE = False
+
 from core.threat_evaluator import ThreatEvaluator
 
 
@@ -31,11 +37,20 @@ class TacticalDetector:
         model_path: Optional[str] = None,
         conf_threshold: float = 0.35,
         iou_threshold: float = 0.45,
-        device: str = "cpu"
+        device: Optional[str] = None
     ):
         self.conf_threshold = conf_threshold
         self.iou_threshold = iou_threshold
-        self.device = device
+        
+        # Auto-detect GPU CUDA jika tersedia
+        if device is None:
+            if TORCH_AVAILABLE and torch.cuda.is_available():
+                self.device = "0"
+            else:
+                self.device = "cpu"
+        else:
+            self.device = device
+
         self.model = None
         self.model_loaded = False
 
@@ -60,12 +75,14 @@ class TacticalDetector:
         frame: np.ndarray,
         enable_distance: bool = False,
         mode: str = "all",
-        draw_hud_reticle: bool = True
+        draw_hud_reticle: bool = True,
+        enable_clahe: bool = False
     ) -> Dict[str, Any]:
         """
         Melakukan inferensi taktis berfokus murni pada Image Classification & Localization:
-        - mode='rov': Menampilkan target danau/bawah air (Submarine, Ikan, Karang, ROV, Kapal)
-        - mode='drone': Menampilkan target POV umum (Tim A Baju Biru, Tim B Baju Ungu, Sipil, Kendaraan, Kapal)
+        - mode='rov': Menampilkan target danau/bawah air (Submarine, Ikan, Karang, ROV, Kapal, Diver)
+        - mode='drone': Menampilkan target POV umum (Soldier, Civilian, Vehicle, Kapal, Tree, Building, FPV)
+        - enable_clahe: Toggle real-time underwater CLAHE enhancer (sesuai kebutuhan video)
         """
         annotated_frame = frame.copy()
         h, w = frame.shape[:2]
@@ -81,8 +98,8 @@ class TacticalDetector:
         }
         rov_stats = {"submarine": 0, "marine_life": 0, "coral_reef": 0, "rov": 0, "ship": 0, "diver": 0}
 
-        # Real-time Underwater Vision Enhancer (Permanen di Mode ROV untuk confidence >= 80%)
-        if mode.lower() == "rov":
+        # Real-time Underwater Vision Enhancer (Dapat diaktifkan via toggle untuk video keruh)
+        if enable_clahe and mode.lower() in ["rov", "all"]:
             infer_frame = self.enhance_underwater_frame(frame)
             annotated_frame = infer_frame.copy()
         else:
@@ -152,6 +169,17 @@ class TacticalDetector:
                     MIN_VEHICLE_AREA = 1200 # piksel kuadrat
                     if conf < MIN_VEHICLE_CONF or (box_w * box_h) < MIN_VEHICLE_AREA:
                         continue # Abaikan besi biasa / noise rongsokan
+
+                # FILTER 3: SANITASI KLASIFIKASI BAWAH AIR (ANTI-MISKLASIFIKASI SUBMARINE PADA IKAN)
+                if mode.lower() in ["rov", "all"]:
+                    cls_id = ThreatEvaluator.sanitize_underwater_target(
+                        class_id=cls_id,
+                        box_w=box_w,
+                        box_h=box_h,
+                        frame_w=w,
+                        frame_h=h,
+                        conf=conf
+                    )
 
                 detected_class_ids.append(cls_id)
                 info = ThreatEvaluator.get_info_by_class_id(cls_id)

@@ -89,6 +89,14 @@ with st.sidebar:
     st.header("⚙️ Parameter Klasifikasi")
     conf_val = st.slider("Confidence Gate", 0.10, 0.90, 0.35, 0.05)
     detector.conf_threshold = conf_val
+    if mode_code in ["rov", "all"]:
+        clahe_toggle = st.toggle(
+            "Underwater CLAHE Enhancer",
+            value=False,
+            help="Aktifkan untuk video keruh/gelap. Matikan jika video jernih."
+        )
+    else:
+        clahe_toggle = False
 
 tab_img, tab_video = st.tabs(["📸 Analisis Foto Tunggal", "🎥 Analisis Rekaman Video (MP4)"])
 
@@ -115,7 +123,7 @@ with tab_img:
         img_to_process = cv2.imread(str(sample_dir / chosen_sample))
 
     if img_to_process is not None:
-        results = detector.detect(img_to_process, enable_distance=False, mode=mode_code)
+        results = detector.detect(img_to_process, enable_distance=False, mode=mode_code, enable_clahe=clahe_toggle)
         annotated = results["annotated_frame"]
         detections = results["detections"]
 
@@ -210,7 +218,7 @@ with tab_video:
 
                 frame_count += 1
                 if frame_count % 2 == 0:
-                    res = detector.detect(frame, enable_distance=False, mode=mode_code)
+                    res = detector.detect(frame, enable_distance=False, mode=mode_code, enable_clahe=clahe_toggle)
                     annotated_v = res["annotated_frame"]
 
                     video_placeholder.image(
