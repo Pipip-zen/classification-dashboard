@@ -104,7 +104,7 @@ with c1:
 with c2:
     st.metric("Mode Operasional", "Dual-Cockpit", delta="ROV Danau + Drone Spectator")
 with c3:
-    st.metric("Testbench Sim", "2 Skenario MP4", delta="ROV & Drone Ready")
+    st.metric("Testbench Sim", "3 Skenario MP4", delta="Hutan, Kota, Danau Ready")
 with c4:
     st.metric("Verifikasi Modul", "100% Passed", delta="7/7 Modul Verified")
 

@@ -269,13 +269,23 @@ if feed_mode == "Virtual Testbench (Simulasi Video)":
     target_vid_file = video_dir / default_vid_name
     all_vids = list(video_dir.glob("*.mp4"))
 
+    def get_friendly_vid_name(p):
+        n = p.name
+        if "forest" in n.lower():
+            return f"🌲 {n} (Drone Hutan & Pejalan Kaki)"
+        elif "land" in n.lower() or "drone" in n.lower():
+            return f"🚁 {n} (Drone Perkotaan & Jalan Raya)"
+        elif "rov" in n.lower() or "underwater" in n.lower():
+            return f"🔵 {n} (ROV Danau & Bawah Air)"
+        return n
+
     c_sel1, c_sel2 = st.columns([3, 1])
     with c_sel1:
         chosen_vid = st.selectbox(
             "Pilih Berkas Video Testbench:",
             all_vids,
             index=all_vids.index(target_vid_file) if target_vid_file in all_vids else 0,
-            format_func=lambda p: p.name
+            format_func=get_friendly_vid_name
         )
     with c_sel2:
         st.write("")
