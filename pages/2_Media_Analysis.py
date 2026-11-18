@@ -103,8 +103,17 @@ with st.sidebar:
             value=False,
             help="Aktifkan untuk video keruh/gelap. Matikan jika video jernih."
         )
+        dusk_toggle = False
+    elif mode_code == "drone":
+        clahe_toggle = False
+        dusk_toggle = st.toggle(
+            "🌆 Dusk / Low-Light Aerial Enhancer",
+            value=False,
+            help="Aktifkan saat drone terbang sore/senja/redup. Menerapkan Gamma adaptif + CLAHE lokal untuk mengangkat bayangan & menonjolkan siluet manusia."
+        )
     else:
         clahe_toggle = False
+        dusk_toggle = False
 
 tab_img, tab_video = st.tabs(["📸 Analisis Foto Tunggal", "🎥 Analisis Rekaman Video (MP4)"])
 
@@ -136,7 +145,8 @@ with tab_img:
             enable_distance=False,
             mode=mode_code,
             enable_clahe=clahe_toggle,
-            show_labels=show_labels_toggle
+            show_labels=show_labels_toggle,
+            enable_dusk=dusk_toggle
         )
         annotated = results["annotated_frame"]
         detections = results["detections"]
@@ -237,7 +247,8 @@ with tab_video:
                         enable_distance=False,
                         mode=mode_code,
                         enable_clahe=clahe_toggle,
-                        show_labels=show_labels_toggle
+                        show_labels=show_labels_toggle,
+                        enable_dusk=dusk_toggle
                     )
                     annotated_v = res["annotated_frame"]
 

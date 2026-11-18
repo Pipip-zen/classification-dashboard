@@ -98,13 +98,15 @@ class TacticalDetector:
         mode: str = "all",
         draw_hud_reticle: bool = True,
         enable_clahe: bool = False,
-        show_labels: bool = True
+        show_labels: bool = True,
+        enable_dusk: bool = False
     ) -> Dict[str, Any]:
         """
         Melakukan inferensi taktis berfokus murni pada Image Classification & Localization:
         - mode='rov': Menampilkan target danau/bawah air (Submarine, Ikan, Karang, ROV, Kapal, Diver)
         - mode='drone': Menampilkan target POV umum (Soldier, Civilian, Vehicle, Kapal, Tree, Building, FPV)
         - enable_clahe: Toggle real-time underwater CLAHE enhancer (sesuai kebutuhan video)
+        - enable_dusk: Toggle real-time aerial dusk / low-light enhancer (Gamma + CLAHE untuk drone sore)
         - show_labels: Toggle visibilitas teks label untuk layar bersih (clean HUD)
         """
         # Hot-reloading jika file bobot model di disk diperbarui
@@ -132,9 +134,12 @@ class TacticalDetector:
         }
         rov_stats = {"submarine": 0, "marine_life": 0, "coral_reef": 0, "rov": 0, "ship": 0, "diver": 0}
 
-        # Real-time Underwater Vision Enhancer (Dapat diaktifkan via toggle untuk video keruh)
+        # Real-time Vision Enhancer (Underwater CLAHE vs Aerial Dusk/Low-Light)
         if enable_clahe and mode.lower() in ["rov", "all"]:
             infer_frame = self.enhance_underwater_frame(frame)
+            annotated_frame = infer_frame.copy()
+        elif enable_dusk and mode.lower() in ["drone", "all"]:
+            infer_frame = self.enhance_dusk_frame(frame)
             annotated_frame = infer_frame.copy()
         else:
             infer_frame = frame
@@ -219,6 +224,17 @@ class TacticalDetector:
                         box_h=box_h,
                         frame_w=w,
                         frame_h=h,
+                        conf=conf
+                    )
+
+                # FILTER 5: SANITASI KLASIFIKASI DRONE (FOLIAGE & BONSAI GUARD ANTI-KENDARAAN)
+                if mode.lower() in ["drone", "all"]:
+                    crop_box = infer_frame[y1:y2, x1:x2]
+                    cls_id = ThreatEvaluator.sanitize_aerial_target(
+                        class_id=cls_id,
+                        cropped_bgr=crop_box,
+                        box_w=box_w,
+                        box_h=box_h,
                         conf=conf
                     )
 
@@ -384,3 +400,35 @@ class TacticalDetector:
 
         enhanced_lab = cv2.merge((cl, a_balanced, b_chan))
         return cv2.cvtColor(enhanced_lab, cv2.COLOR_LAB2BGR)
+
+    @staticmethod
+    def enhance_dusk_frame(frame: np.ndarray, gamma: float = 0.65) -> np.ndarray:
+        """
+        Dusk / Low-Light Aerial Vision Enhancer untuk Drone Mode:
+        - Menerapkan Adaptive Gamma Correction untuk mengangkat bayangan gelap sore hari
+        - Menerapkan CLAHE pada L-channel (LAB) untuk menonjolkan siluet manusia & tekstur pohon
+        - Menajamkan kontur kecil dari ketinggian drone agar confidence manusia meningkat
+        """
+        if frame is None or frame.size == 0:
+            return frame
+
+        try:
+            # 1. Gamma Correction (mencerahkan midtones & area remang-remang)
+            inv_gamma = 1.0 / max(0.1, gamma)
+            table = np.array([((i / 255.0) ** inv_gamma) * 255 for i in np.arange(0, 256)]).astype(np.uint8)
+            brightened = cv2.LUT(frame, table)
+
+            # 2. CLAHE pada Luminance Channel (LAB)
+            lab = cv2.cvtColor(brightened, cv2.COLOR_BGR2LAB)
+            l, a, b = cv2.split(lab)
+            clahe = cv2.createCLAHE(clipLimit=2.2, tileGridSize=(8, 8))
+            l_enhanced = clahe.apply(l)
+            enhanced_lab = cv2.merge((l_enhanced, a, b))
+            result = cv2.cvtColor(enhanced_lab, cv2.COLOR_LAB2BGR)
+
+            # 3. Subtle Unsharp Masking untuk mempertegas kontur kepala/bahu manusia & dedaunan
+            gaussian = cv2.GaussianBlur(result, (0, 0), 2.0)
+            sharpened = cv2.addWeighted(result, 1.25, gaussian, -0.25, 0)
+            return sharpened
+        except Exception:
+            return frame

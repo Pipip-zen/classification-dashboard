@@ -224,8 +224,14 @@ with st.sidebar:
             value=False,
             help="Aktifkan untuk rekaman bawah air yang sangat keruh/gelap/hijau. Matikan untuk video jernih (misal YouTube terumbu karang tropis)."
         )
+        dusk_toggle = False
     else:
         clahe_toggle = False
+        dusk_toggle = st.toggle(
+            "🌆 Dusk / Low-Light Aerial Enhancer",
+            value=False,
+            help="Aktifkan saat drone terbang sore/senja/redup. Menerapkan Gamma adaptif + CLAHE lokal untuk mengangkat bayangan & menajamkan siluet manusia."
+        )
 
     st.divider()
     st.markdown("### 📸 REKAMAN PATROLI (STITCHING)")
@@ -541,7 +547,8 @@ if is_active:
             mode=active_mode_code,
             draw_hud_reticle=draw_reticle,
             enable_clahe=clahe_toggle,
-            show_labels=show_labels_toggle
+            show_labels=show_labels_toggle,
+            enable_dusk=dusk_toggle
         )
         annotated_bgr = results["annotated_frame"]
 

@@ -12,7 +12,7 @@ Deskripsi:
 
 import cv2
 import numpy as np
-from typing import Dict, Any, List, Tuple, Set
+from typing import Dict, Any, List, Tuple, Set, Optional
 
 
 class ThreatEvaluator:
@@ -186,6 +186,49 @@ class ThreatEvaluator:
             if aspect_ratio < 2.0 and conf < 0.85:
                 return 5 # Remap ke marine_life
 
+        return class_id
+
+    @classmethod
+    def sanitize_aerial_target(
+        cls,
+        class_id: int,
+        cropped_bgr: Optional[np.ndarray],
+        box_w: int,
+        box_h: int,
+        conf: float
+    ) -> int:
+        """
+        Anti-Misclassification Engine Mode Drone (Foliage & Tree Guard):
+        Mencegah tanaman hias, pohon pangkas, atau bonsai berpenampilan rapi/bulat
+        disalahartikan sebagai kendaraan (military_vehicle / vehicle).
+        Jika objek terdeteksi sebagai vehicle (1), namun memiliki karakteristik vegetasi:
+        1. Indeks Warna Klorofil / Daun (Excess Green Index: 2G - R - B > 0 atau spektrum hijau-kuning dominan).
+        2. Tekstur Granular / Daun (varians gradien Laplacian tinggi khas dedaunan vs pelat logam halus mobil).
+        Maka otomatis direklasifikasi secara cerdas ke kelas 9 (tree: Pohon / Vegetasi).
+        """
+        if class_id == 1 and cropped_bgr is not None and cropped_bgr.size > 20: # vehicle
+            try:
+                # 1. Analisis Klorofil via Color Space (Excess Green Index & HSV)
+                b, g, r = cv2.split(cropped_bgr.astype(np.float32))
+                exg = (2.0 * g) - r - b
+                green_foliage_ratio = np.count_nonzero(exg > 4.0) / float(cropped_bgr.shape[0] * cropped_bgr.shape[1])
+
+                hsv = cv2.cvtColor(cropped_bgr, cv2.COLOR_BGR2HSV)
+                # Rentang Hue dedaunan/tanaman (hijau zaitun, hijau daun, hijau tua): Hue 25 s/d 85
+                lower_foliage = np.array([25, 20, 20])
+                upper_foliage = np.array([85, 255, 255])
+                foliage_mask = cv2.inRange(hsv, lower_foliage, upper_foliage)
+                hsv_foliage_ratio = np.count_nonzero(foliage_mask) / float(cropped_bgr.shape[0] * cropped_bgr.shape[1])
+
+                # 2. Analisis Tekstur Organik Dedaunan (Laplacian Variance)
+                gray = cv2.cvtColor(cropped_bgr, cv2.COLOR_BGR2GRAY)
+                lap_var = cv2.Laplacian(gray, cv2.CV_32F).var()
+
+                # Jika objek memiliki dominasi pigmen daun (>18% ExG atau >25% HSV) dan bertekstur organik (lap_var > 40)
+                if (green_foliage_ratio > 0.18 or hsv_foliage_ratio > 0.25) and lap_var > 40.0:
+                    return 9 # Remap ke tree (Pohon / Vegetasi)
+            except Exception:
+                pass
         return class_id
 
     @classmethod

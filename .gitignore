@@ -10,6 +10,7 @@ env/
 # DATASETS (PENTING: Jangan push ribuan gambar & label mentah ke GitHub)
 data/**/images/
 data/**/labels/
+data/raw_bonsai/
 *.cache
 data/*.zip
 data/*.tar.gz
