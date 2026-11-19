@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Upload, Download, Moon, ShieldAlert, FileText, Image as ImageIcon } from 'lucide-react';
+import { Upload, Download, Moon, FileText, Image as ImageIcon } from 'lucide-react';
 
 export const MediaAnalysis: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -79,12 +79,11 @@ export const MediaAnalysis: React.FC = () => {
     <div className="p-4 lg:p-6 max-w-7xl mx-auto space-y-5">
       {/* Page Header */}
       <div className="border-b border-slate-800 pb-3">
-        <h1 className="text-lg font-bold font-mono text-slate-100 flex items-center space-x-2">
-          <ShieldAlert className="w-5 h-5 text-signal-cyan" />
-          <span>MEDIA ANALYSIS: INSPEKSI CITRA OFFLINE</span>
+        <h1 className="text-base font-bold font-mono text-slate-100">
+          Media Analysis
         </h1>
         <p className="text-xs text-slate-400 mt-0.5">
-          Pemeriksaan taktis citra foto udara dan bawah air dengan klasifikasi objek dan estimasi jarak.
+          Inspeksi taktis citra offline dengan klasifikasi objek dan estimasi jarak.
         </p>
       </div>
 

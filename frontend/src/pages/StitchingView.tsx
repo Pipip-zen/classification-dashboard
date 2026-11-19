@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Layers, Upload, Download, CheckCircle, AlertTriangle, Image as ImageIcon } from 'lucide-react';
+import { Upload, Download, CheckCircle, AlertTriangle, Image as ImageIcon } from 'lucide-react';
 
 export const StitchingView: React.FC = () => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -46,12 +46,11 @@ export const StitchingView: React.FC = () => {
     <div className="p-4 lg:p-6 max-w-7xl mx-auto space-y-5">
       {/* Page Header */}
       <div className="border-b border-slate-800 pb-3">
-        <h1 className="text-lg font-bold font-mono text-slate-100 flex items-center space-x-2">
-          <Layers className="w-5 h-5 text-signal-cyan" />
-          <span>PANORAMA IMAGE STITCHING</span>
+        <h1 className="text-base font-bold font-mono text-slate-100">
+          Panorama Stitching
         </h1>
         <p className="text-xs text-slate-400 mt-0.5">
-          Penggabungan rangkaian citra beririsan (overlap &gt; 30%) dari patroli ROV bawah air atau drone udara.
+          Penggabungan rangkaian citra beririsan (overlap &gt; 30%) menjadi bidang pandang lebar.
         </p>
       </div>
 

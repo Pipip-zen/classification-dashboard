@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Database, CheckCircle } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 
 export const DatasetView: React.FC = () => {
   const [classes, setClasses] = useState<any[]>([]);
@@ -22,12 +22,11 @@ export const DatasetView: React.FC = () => {
   return (
     <div className="p-4 lg:p-6 max-w-7xl mx-auto space-y-5">
       <div className="border-b border-slate-800 pb-3">
-        <h1 className="text-lg font-bold font-mono text-slate-100 flex items-center space-x-2">
-          <Database className="w-5 h-5 text-signal-cyan" />
-          <span>DATASET EXPLORER: TAKSONOMI 12 KELAS</span>
+        <h1 className="text-base font-bold font-mono text-slate-100">
+          Dataset & Taksonomi
         </h1>
         <p className="text-xs text-slate-400 mt-0.5">
-          Taksonomi sensorik terpadu wahana ROV Danau dan Drone Spectator Udara.
+          Taksonomi 12 kelas sensorik wahana ROV Danau dan Drone Spectator.
         </p>
       </div>
 

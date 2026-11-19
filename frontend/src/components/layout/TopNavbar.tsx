@@ -6,8 +6,7 @@ import {
   Scissors, 
   Database, 
   Cpu, 
-  Activity,
-  Radio
+  Activity
 } from 'lucide-react';
 import type { TelemetryData } from '../../types';
 
@@ -38,14 +37,9 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
     <header className="h-14 bg-slate-900 border-b border-slate-800 px-3 lg:px-5 flex items-center justify-between select-none z-30 sticky top-0">
       {/* Brand & Cockpit Switcher */}
       <div className="flex items-center space-x-3 shrink-0">
-        <div className="flex items-center space-x-2">
-          <div className="w-7 h-7 rounded bg-slate-800 border border-slate-700 flex items-center justify-center">
-            <Radio className="w-4 h-4 text-signal-cyan" />
-          </div>
-          <span className="font-mono font-bold text-xs tracking-wider text-slate-100 hidden sm:inline">
-            TACTICAL GCS
-          </span>
-        </div>
+        <span className="font-mono font-bold text-sm tracking-wide text-white">
+          Tactical GCS
+        </span>
 
         {/* Cockpit Mode Toggle */}
         <div className="flex items-center bg-slate-950 p-0.5 rounded border border-slate-800">

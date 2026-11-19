@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Scissors, Upload, Download, Eraser, Paintbrush } from 'lucide-react';
+import { Upload, Download, Eraser, Paintbrush } from 'lucide-react';
 
 export const InpaintingView: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -143,12 +143,11 @@ export const InpaintingView: React.FC = () => {
   return (
     <div className="p-4 lg:p-6 max-w-7xl mx-auto space-y-5">
       <div className="border-b border-slate-800 pb-3">
-        <h1 className="text-lg font-bold font-mono text-slate-100 flex items-center space-x-2">
-          <Scissors className="w-5 h-5 text-signal-cyan" />
-          <span>TACTICAL INPAINTING</span>
+        <h1 className="text-base font-bold font-mono text-slate-100">
+          Image Inpainting
         </h1>
         <p className="text-xs text-slate-400 mt-0.5">
-          Tandai wilayah objek dengan kuas mouse untuk proses rekonstruksi citra menggunakan algoritma Telea atau Navier-Stokes.
+          Tandai wilayah mask dengan kuas untuk rekonstruksi citra menggunakan Telea atau Navier-Stokes.
         </p>
       </div>
 
