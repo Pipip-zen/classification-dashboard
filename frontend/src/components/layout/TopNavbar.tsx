@@ -2,8 +2,6 @@ import React from 'react';
 import { 
   ShieldAlert, 
   Video, 
-  Layers, 
-  Scissors, 
   Database, 
   Cpu, 
   Activity
@@ -28,8 +26,6 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
   const tabs = [
     { id: 'live', label: 'Live Cockpit', icon: Video },
     { id: 'analysis', label: 'Media Analysis', icon: ShieldAlert },
-    { id: 'stitching', label: 'Stitching', icon: Layers },
-    { id: 'inpainting', label: 'Inpainting', icon: Scissors },
     { id: 'dataset', label: 'Dataset', icon: Database },
   ];
 

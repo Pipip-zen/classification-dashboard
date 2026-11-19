@@ -2,8 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { TopNavbar } from './components/layout/TopNavbar';
 import { LiveCockpit } from './pages/LiveCockpit';
 import { MediaAnalysis } from './pages/MediaAnalysis';
-import { StitchingView } from './pages/StitchingView';
-import { InpaintingView } from './pages/InpaintingView';
 import { DatasetView } from './pages/DatasetView';
 import type { TelemetryData } from './types';
 
@@ -103,8 +101,6 @@ export const App: React.FC = () => {
           <LiveCockpit cockpitMode={cockpitMode} telemetry={telemetry} />
         )}
         {activeTab === 'analysis' && <MediaAnalysis />}
-        {activeTab === 'stitching' && <StitchingView />}
-        {activeTab === 'inpainting' && <InpaintingView />}
         {activeTab === 'dataset' && <DatasetView />}
       </main>
     </div>
