@@ -125,18 +125,18 @@ def test_stream_capture():
     return True
 
 def test_file_integrity():
-    print("[7/7] Memeriksa Integritas File Antarmuka Streamlit...", end="")
-    required_pages = [
-        base_dir / "app.py",
-        base_dir / "pages" / "1_Live_Surveillance.py",
-        base_dir / "pages" / "2_Media_Analysis.py",
-        base_dir / "pages" / "3_Image_Stitching.py",
-        base_dir / "pages" / "4_Image_Inpainting.py",
-        base_dir / "pages" / "5_Dataset_Helper.py",
-        base_dir / ".streamlit" / "config.toml"
+    print("[7/7] Memeriksa Integritas File Antarmuka Tactical GCS...", end="")
+    required_files = [
+        base_dir / "run.py",
+        base_dir / "run_gcs.bat",
+        base_dir / "server" / "main.py",
+        base_dir / "server" / "services" / "stream_worker.py",
+        base_dir / "frontend" / "dist" / "index.html",
+        base_dir / "frontend" / "package.json",
+        base_dir / "scripts" / "test_gcs_api.py"
     ]
-    for p in required_pages:
-        assert p.exists(), f"Halaman tidak ditemukan: {p}"
+    for p in required_files:
+        assert p.exists(), f"File tidak ditemukan: {p}"
     print(" [PASSED]")
     return True
 
