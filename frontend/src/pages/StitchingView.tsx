@@ -18,7 +18,7 @@ export const StitchingView: React.FC = () => {
 
   const handleRunStitching = async () => {
     if (selectedFiles.length < 2) {
-      alert("Pilih minimal 2 citra foto beririsan untuk stitching");
+      alert("Pilih minimal 2 citra foto beririsan untuk proses stitching.");
       return;
     }
     setLoading(true);
@@ -36,92 +36,85 @@ export const StitchingView: React.FC = () => {
       const data = await res.json();
       setResult(data);
     } catch (e) {
-      alert("Error menghubungi server backend");
+      alert("Gagal menghubungi server backend.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-aerospace-border pb-4">
-        <div>
-          <h1 className="text-xl font-bold font-mono text-white flex items-center space-x-2">
-            <Layers className="w-5 h-5 text-tactical-cyan" />
-            <span>PANORAMA IMAGE STITCHING: CITRA WIDE-ANGLE PATROLI</span>
-          </h1>
-          <p className="text-xs text-tactical-muted mt-1">
-            Menggabungkan serangkaian citra foto beririsan (overlap &gt; 30%) dari patroli ROV dasar danau atau drone udara menjadi peta panorama terpadu.
-          </p>
-        </div>
+    <div className="p-4 lg:p-6 max-w-7xl mx-auto space-y-5">
+      {/* Page Header */}
+      <div className="border-b border-slate-800 pb-3">
+        <h1 className="text-lg font-bold font-mono text-slate-100 flex items-center space-x-2">
+          <Layers className="w-5 h-5 text-signal-cyan" />
+          <span>PANORAMA IMAGE STITCHING</span>
+        </h1>
+        <p className="text-xs text-slate-400 mt-0.5">
+          Penggabungan rangkaian citra beririsan (overlap &gt; 30%) dari patroli ROV bawah air atau drone udara.
+        </p>
       </div>
 
-      {/* Grid Konfigurasi & Preview Input */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Kolom Kiri: Upload & Pengaturan */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {/* Kolom Upload */}
         <div className="space-y-4">
-          <div className="tactical-glass p-4 rounded-xl border border-aerospace-border space-y-4">
-            <h2 className="text-xs font-mono font-bold text-gray-300 uppercase tracking-wider">
-              Unggah Rangkaian Citra
+          <div className="bg-slate-900 p-4 rounded border border-slate-800 space-y-3">
+            <h2 className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider">
+              Unggah Rangkaian Foto
             </h2>
 
-            {/* Multi Dropzone */}
-            <label className="border-2 border-dashed border-aerospace-border hover:border-tactical-cyan/50 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all bg-aerospace-panel/40">
-              <Upload className="w-8 h-8 text-tactical-cyan mb-2" />
-              <span className="text-xs font-mono text-gray-300 text-center">
+            <label className="border-2 border-dashed border-slate-700 hover:border-slate-500 rounded p-5 flex flex-col items-center justify-center cursor-pointer transition-colors bg-slate-950">
+              <Upload className="w-6 h-6 text-slate-400 mb-2" />
+              <span className="text-xs font-mono text-slate-300 text-center">
                 {selectedFiles.length > 0 
-                  ? `${selectedFiles.length} Berkas Citra Terpilih` 
-                  : 'Pilih 2 atau lebih foto beririsan'}
+                  ? `${selectedFiles.length} berkas foto terpilih` 
+                  : 'Pilih 2 atau lebih foto berurutan'}
               </span>
-              <span className="text-[10px] text-gray-500 font-mono mt-1">Format: JPG, PNG (Multi-select)</span>
+              <span className="text-[10px] text-slate-500 font-mono mt-1">Format: JPG, PNG</span>
               <input type="file" multiple accept="image/*" onChange={handleFilesChange} className="hidden" />
             </label>
 
-            {/* Mode Stitcher */}
             <div>
-              <label className="text-[11px] font-mono text-gray-400 block mb-1">Mode Algoritma:</label>
+              <label className="text-[11px] font-mono text-slate-400 block mb-1">Mode Algoritma:</label>
               <select
                 value={mode}
                 onChange={(e) => setMode(e.target.value)}
-                className="w-full bg-aerospace-bg border border-aerospace-border rounded px-3 py-2 text-xs text-white font-mono focus:border-tactical-cyan focus:outline-none"
+                className="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-xs text-white font-mono focus:border-slate-500 focus:outline-none"
               >
                 <option value="panorama">Panorama (Rotasi Kamera / Lensa Melengkung)</option>
                 <option value="scans">Scans (Translasi Datar / Drone Mapping Planar)</option>
               </select>
             </div>
 
-            {/* Crop Borders Toggle */}
-            <div className="flex items-center justify-between p-2.5 rounded bg-aerospace-panel border border-aerospace-border">
-              <span className="text-xs font-mono text-gray-300">Pangkas Batas Hitam (Trim):</span>
+            <div className="flex items-center justify-between p-2.5 rounded bg-slate-950 border border-slate-800">
+              <span className="text-xs font-mono text-slate-300">Pangkas Batas Hitam:</span>
               <input
                 type="checkbox"
                 checked={cropBorders}
                 onChange={(e) => setCropBorders(e.target.checked)}
-                className="w-4 h-4 rounded accent-tactical-cyan cursor-pointer"
+                className="w-4 h-4 rounded accent-signal-cyan cursor-pointer"
               />
             </div>
 
-            {/* Action Button */}
             <button
+              type="button"
               onClick={handleRunStitching}
               disabled={loading || selectedFiles.length < 2}
-              className="w-full py-2.5 rounded-lg bg-tactical-cyan hover:bg-cyan-400 text-black font-mono font-bold text-xs tracking-wider transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-glow-cyan"
+              className="w-full py-2.5 rounded bg-signal-cyan hover:bg-cyan-500 text-slate-950 font-mono font-bold text-xs tracking-wider transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {loading ? 'MEMPROSES HOMOGRAFI & STITCHING...' : 'JALANKAN STITCHING PANORAMA'}
+              {loading ? 'MEMPROSES HOMOGRAFI...' : 'JALANKAN STITCHING PANORAMA'}
             </button>
           </div>
 
-          {/* Thumbnail List */}
           {selectedFiles.length > 0 && (
-            <div className="tactical-glass p-3 rounded-xl border border-aerospace-border">
-              <div className="text-[11px] font-mono text-gray-400 uppercase mb-2">
-                Daftar Foto Input ({selectedFiles.length}):
+            <div className="bg-slate-900 p-3 rounded border border-slate-800">
+              <div className="text-[11px] font-mono text-slate-400 uppercase mb-2">
+                Foto Input Terpilih ({selectedFiles.length}):
               </div>
-              <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+              <div className="grid grid-cols-2 gap-1.5 max-h-40 overflow-y-auto">
                 {selectedFiles.map((f, i) => (
-                  <div key={i} className="bg-aerospace-panel p-1 rounded border border-aerospace-border text-center">
-                    <div className="text-[10px] text-gray-400 font-mono truncate">{f.name}</div>
+                  <div key={i} className="bg-slate-950 p-1.5 rounded border border-slate-800 text-[11px] font-mono text-slate-300 truncate">
+                    {f.name}
                   </div>
                 ))}
               </div>
@@ -129,38 +122,37 @@ export const StitchingView: React.FC = () => {
           )}
         </div>
 
-        {/* Kolom Kanan: Hasil Panorama */}
+        {/* Kolom Viewport Panorama */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="tactical-glass p-4 rounded-xl border border-aerospace-border">
-            <div className="flex items-center justify-between mb-3 border-b border-aerospace-border pb-2">
-              <h2 className="text-xs font-mono font-bold text-gray-300 uppercase tracking-wider flex items-center space-x-2">
-                <ImageIcon className="w-4 h-4 text-tactical-cyan" />
+          <div className="bg-slate-900 p-4 rounded border border-slate-800">
+            <div className="flex items-center justify-between mb-3 border-b border-slate-800 pb-2">
+              <h2 className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider flex items-center space-x-2">
+                <ImageIcon className="w-4 h-4 text-signal-cyan" />
                 <span>HASIL CITRA PANORAMA</span>
               </h2>
               {result && result.success && (
                 <div className="flex items-center space-x-3">
-                  <span className="text-xs font-mono text-tactical-emerald font-bold">
+                  <span className="text-xs font-mono text-emerald-400 font-bold font-telemetry">
                     {result.resolution.width} x {result.resolution.height} px
                   </span>
                   <a
                     href={result.panorama_url}
                     download="tactical_panorama.jpg"
-                    className="flex items-center space-x-1 px-2.5 py-1 rounded bg-tactical-cyan text-black font-mono font-bold text-xs"
+                    className="flex items-center space-x-1 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-signal-cyan font-mono text-xs border border-slate-700"
                   >
-                    <Download className="w-3 h-3" />
+                    <Download className="w-3.5 h-3.5" />
                     <span>Unduh</span>
                   </a>
                 </div>
               )}
             </div>
 
-            {/* Notification Banner */}
             {result && (
               <div 
-                className={`p-3 rounded-lg mb-3 flex items-center space-x-2 font-mono text-xs border ${
+                className={`p-2.5 rounded mb-3 flex items-center space-x-2 font-mono text-xs border ${
                   result.success 
-                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' 
-                    : 'bg-red-500/20 text-red-300 border-red-500/40'
+                    ? 'bg-emerald-950/40 text-emerald-300 border-emerald-800' 
+                    : 'bg-red-950/40 text-red-300 border-red-800'
                 }`}
               >
                 {result.success ? <CheckCircle className="w-4 h-4 shrink-0" /> : <AlertTriangle className="w-4 h-4 shrink-0" />}
@@ -168,17 +160,16 @@ export const StitchingView: React.FC = () => {
               </div>
             )}
 
-            {/* Viewport Panorama */}
-            <div className="w-full h-[450px] bg-aerospace-stage rounded-lg border border-aerospace-border flex items-center justify-center overflow-auto p-2">
+            <div className="w-full h-[440px] bg-slate-950 rounded border border-slate-800 flex items-center justify-center overflow-auto p-2">
               {result && result.success ? (
                 <img
                   src={result.panorama_url}
-                  alt="Panorama Stitched"
+                  alt="Panorama Hasil Stitching"
                   className="max-w-none h-full object-contain"
                 />
               ) : (
-                <div className="text-center text-gray-500 font-mono text-xs">
-                  {loading ? 'Sedang melakukan feature matching SIFT/ORB & homografi matriks...' : 'Citra panorama akan ditampilkan di sini'}
+                <div className="text-center text-slate-500 font-mono text-xs">
+                  {loading ? 'Menghitung fitur titik temu SIFT dan estimasi homografi...' : 'Pilih minimal 2 citra dan klik jalankan stitching.'}
                 </div>
               )}
             </div>

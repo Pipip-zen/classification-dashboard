@@ -8,14 +8,13 @@ import {
   Crosshair, 
   Moon, 
   RefreshCw, 
-  ChevronLeft, 
-  ChevronRight,
   Tv,
   Film,
   Monitor,
   Radio,
   Camera,
-  Share2
+  Share2,
+  ListFilter
 } from 'lucide-react';
 import type { TelemetryData, VideoSourceOption } from '../types';
 
@@ -28,6 +27,9 @@ export const LiveCockpit: React.FC<LiveCockpitProps> = ({
   cockpitMode,
   telemetry,
 }) => {
+  // Active Sidebar Tab
+  const [sidebarTab, setSidebarTab] = useState<'input' | 'telemetry' | 'params'>('input');
+
   // Source State
   const [sourceType, setSourceType] = useState<string>('testbench');
   const [testbenchVideos, setTestbenchVideos] = useState<VideoSourceOption[]>([]);
@@ -49,10 +51,6 @@ export const LiveCockpit: React.FC<LiveCockpitProps> = ({
   const [reticleVisible, setReticleVisible] = useState<boolean>(true);
   const [labelsVisible, setLabelsVisible] = useState<boolean>(true);
 
-  // Floating Card Minimization
-  const [leftCardCollapsed, setLeftCardCollapsed] = useState<boolean>(false);
-  const [rightCardCollapsed, setRightCardCollapsed] = useState<boolean>(false);
-
   // Fetch available sources on mount
   useEffect(() => {
     fetch('/api/stream/sources')
@@ -73,7 +71,6 @@ export const LiveCockpit: React.FC<LiveCockpitProps> = ({
       })
       .catch(err => console.error("Error fetching sources:", err));
 
-    // Cek status streaming saat ini
     fetch('/api/stream/status')
       .then(res => res.json())
       .then(data => {
@@ -87,7 +84,6 @@ export const LiveCockpit: React.FC<LiveCockpitProps> = ({
       .catch(err => console.error("Error fetching stream status:", err));
   }, [cockpitMode]);
 
-  // Update Config ke Backend saat slider/toggle berubah
   const updateBackendConfig = async (patch: Record<string, any>) => {
     try {
       await fetch('/api/stream/config', {
@@ -123,7 +119,6 @@ export const LiveCockpit: React.FC<LiveCockpitProps> = ({
     updateBackendConfig({ labels_visible: nextVal });
   };
 
-  // Start / Stop Stream
   const handleStartStream = async () => {
     setLoadingStream(true);
     let param = '';
@@ -176,422 +171,427 @@ export const LiveCockpit: React.FC<LiveCockpitProps> = ({
   };
 
   const sourceButtons = [
-    { id: 'testbench', label: 'Virtual Testbench', icon: Tv },
-    { id: 'youtube', label: 'YouTube Stream', icon: Film },
-    { id: 'screen', label: 'Screen Mirroring', icon: Monitor },
-    { id: 'network', label: 'Network / RTSP', icon: Radio },
+    { id: 'testbench', label: 'Testbench MP4', icon: Tv },
+    { id: 'youtube', label: 'YouTube URL', icon: Film },
+    { id: 'screen', label: 'Screen Mirror', icon: Monitor },
+    { id: 'network', label: 'RTSP / UDP', icon: Radio },
     { id: 'webcam', label: 'USB Webcam', icon: Camera },
     { id: 'tiktok', label: 'TikTok Live', icon: Share2 },
   ];
 
   return (
-    <div className="relative w-full h-[calc(100vh-4rem)] bg-aerospace-stage overflow-hidden flex items-center justify-center">
-      {/* 1. FULL-VIEWPORT VIDEO STAGE */}
-      <div className="relative w-full h-full flex items-center justify-center">
-        <img
-          src="/api/stream/feed"
-          alt="Tactical Video Stream"
-          className="max-w-full max-h-full object-contain pointer-events-none select-none"
-        />
+    <div className="flex flex-col lg:flex-row h-[calc(100vh-3.5rem)] w-full overflow-hidden bg-slate-950">
+      {/* 1. MAIN STAGE: VIDEO CANVAS BERSIH (70% - 100% Tanpa Halangan) */}
+      <div className="flex-1 h-full flex flex-col relative overflow-hidden bg-black">
+        {/* Video Stage Frame */}
+        <div className="flex-1 relative flex items-center justify-center overflow-hidden">
+          <img
+            src="/api/stream/feed"
+            alt="Tactical Video Stream"
+            className="w-full h-full object-contain pointer-events-none select-none"
+          />
 
-        {/* Tactical Corner Brackets */}
-        <div className="absolute top-4 left-4 w-8 h-8 border-t-2 border-l-2 border-tactical-cyan/40 pointer-events-none" />
-        <div className="absolute top-4 right-4 w-8 h-8 border-t-2 border-r-2 border-tactical-cyan/40 pointer-events-none" />
-        <div className="absolute bottom-4 left-4 w-8 h-8 border-b-2 border-l-2 border-tactical-cyan/40 pointer-events-none" />
-        <div className="absolute bottom-4 right-4 w-8 h-8 border-b-2 border-r-2 border-tactical-cyan/40 pointer-events-none" />
+          {/* Subdued Reticle Crosshair */}
+          {reticleVisible && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="relative w-24 h-24 border border-slate-400/40 rounded-full flex items-center justify-center">
+                <div className="w-1.5 h-1.5 rounded-full bg-signal-cyan/80" />
+                <div className="absolute top-0 w-px h-3 bg-slate-300/60" />
+                <div className="absolute bottom-0 w-px h-3 bg-slate-300/60" />
+                <div className="absolute left-0 w-3 h-px bg-slate-300/60" />
+                <div className="absolute right-0 w-3 h-px bg-slate-300/60" />
+              </div>
+            </div>
+          )}
 
-        {/* Center Reticle (jika diaktifkan) */}
-        {reticleVisible && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="relative w-28 h-28 border border-tactical-cyan/30 rounded-full flex items-center justify-center">
-              <div className="w-2 h-2 rounded-full bg-tactical-cyan/60 animate-ping" />
-              <div className="absolute top-0 w-px h-4 bg-tactical-cyan/70" />
-              <div className="absolute bottom-0 w-px h-4 bg-tactical-cyan/70" />
-              <div className="absolute left-0 w-4 h-px bg-tactical-cyan/70" />
-              <div className="absolute right-0 w-4 h-px bg-tactical-cyan/70" />
+          {/* Minimalist Top OSD Badge */}
+          <div className="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-sm border border-slate-700/60 px-2.5 py-1 rounded text-[11px] font-mono text-slate-300 flex items-center space-x-2">
+            <span className={`w-2 h-2 rounded-full ${isStreaming ? 'bg-signal-green' : 'bg-slate-500'}`} />
+            <span className="font-semibold uppercase tracking-wider">
+              {cockpitMode === 'drone' ? 'DRONE SPECTATOR' : 'ROV DANAU'}
+            </span>
+            <span className="text-slate-500">|</span>
+            <span className="text-slate-400">{sourceType.toUpperCase()}</span>
+          </div>
+
+          {/* Minimalist Threat Sector Badge */}
+          <div 
+            className="absolute top-3 right-3 px-2.5 py-1 rounded text-[11px] font-mono font-bold uppercase tracking-wider border backdrop-blur-sm"
+            style={{
+              backgroundColor: `${telemetry.threat_color_hex}20`,
+              borderColor: `${telemetry.threat_color_hex}70`,
+              color: telemetry.threat_color_hex
+            }}
+          >
+            {telemetry.threat_level}
+          </div>
+        </div>
+      </div>
+
+      {/* 2. DEDICATED RIGHT SIDEBAR WORKSTATION (30% / 360px - Anti Nabrak) */}
+      <div className="w-full lg:w-96 shrink-0 h-auto lg:h-full bg-slate-900 border-t lg:border-t-0 lg:border-l border-slate-800 flex flex-col z-20">
+        {/* Sidebar Nav Tabs */}
+        <div className="grid grid-cols-3 border-b border-slate-800 bg-slate-950/70 p-1 gap-1">
+          <button
+            type="button"
+            onClick={() => setSidebarTab('input')}
+            className={`flex items-center justify-center space-x-1.5 py-2 rounded text-xs font-mono font-medium transition-colors ${
+              sidebarTab === 'input'
+                ? 'bg-slate-800 text-white border border-slate-700'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Tv className="w-3.5 h-3.5" />
+            <span>Sinyal</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setSidebarTab('telemetry')}
+            className={`flex items-center justify-center space-x-1.5 py-2 rounded text-xs font-mono font-medium transition-colors ${
+              sidebarTab === 'telemetry'
+                ? 'bg-slate-800 text-white border border-slate-700'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <ListFilter className="w-3.5 h-3.5" />
+            <span>Target ({telemetry.total_objects})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setSidebarTab('params')}
+            className={`flex items-center justify-center space-x-1.5 py-2 rounded text-xs font-mono font-medium transition-colors ${
+              sidebarTab === 'params'
+                ? 'bg-slate-800 text-white border border-slate-700'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Sliders className="w-3.5 h-3.5" />
+            <span>AI OSD</span>
+          </button>
+        </div>
+
+        {/* Tab 1: Sinyal Input */}
+        {sidebarTab === 'input' && (
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div>
+              <label className="text-[11px] font-mono text-slate-400 uppercase tracking-wider block mb-2">
+                Pilih Sumber Input:
+              </label>
+              <div className="grid grid-cols-2 gap-1.5">
+                {sourceButtons.map(s => {
+                  const Icon = s.icon;
+                  const isSelected = sourceType === s.id;
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => setSourceType(s.id)}
+                      className={`flex items-center space-x-2 px-2.5 py-2 rounded text-xs font-mono transition-colors text-left ${
+                        isSelected
+                          ? 'bg-slate-800 text-signal-cyan border border-slate-700'
+                          : 'bg-slate-850 text-slate-300 hover:bg-slate-800'
+                      }`}
+                    >
+                      <Icon className={`w-3.5 h-3.5 ${isSelected ? 'text-signal-cyan' : 'text-slate-500'}`} />
+                      <span className="truncate">{s.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Input Options Body */}
+            <div className="bg-slate-950 p-3 rounded border border-slate-800 space-y-2">
+              {sourceType === 'testbench' && (
+                <div>
+                  <label className="text-[11px] font-mono text-slate-400 block mb-1">Pilih Video Testbench:</label>
+                  <select
+                    value={selectedVideo}
+                    onChange={(e) => setSelectedVideo(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-2 text-xs text-white font-mono focus:border-slate-500 focus:outline-none"
+                  >
+                    {testbenchVideos.map(v => (
+                      <option key={v.filename} value={v.filename}>
+                        {v.display_name} ({v.size_mb} MB)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {sourceType === 'youtube' && (
+                <div>
+                  <label className="text-[11px] font-mono text-slate-400 block mb-1">YouTube URL:</label>
+                  <input
+                    type="text"
+                    value={youtubeUrl}
+                    onChange={(e) => setYoutubeUrl(e.target.value)}
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-2 text-xs text-white font-mono focus:border-slate-500 focus:outline-none"
+                  />
+                </div>
+              )}
+
+              {sourceType === 'network' && (
+                <div>
+                  <label className="text-[11px] font-mono text-slate-400 block mb-1">RTSP / UDP / SDP Path:</label>
+                  <input
+                    type="text"
+                    value={networkUrl}
+                    onChange={(e) => setNetworkUrl(e.target.value)}
+                    placeholder="udp://192.168.2.1:5602"
+                    className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-2 text-xs text-white font-mono focus:border-slate-500 focus:outline-none"
+                  />
+                </div>
+              )}
+
+              {sourceType === 'screen' && (
+                <div>
+                  <label className="text-[11px] font-mono text-slate-400 block mb-1">Pilih Window Software:</label>
+                  <select
+                    value={selectedWindow}
+                    onChange={(e) => setSelectedWindow(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-2 text-xs text-white font-mono focus:border-slate-500 focus:outline-none"
+                  >
+                    {activeWindows.map(w => (
+                      <option key={w} value={w}>{w}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {sourceType === 'webcam' && (
+                <div>
+                  <label className="text-[11px] font-mono text-slate-400 block mb-1">Indeks USB Webcam:</label>
+                  <input
+                    type="number"
+                    value={webcamIndex}
+                    onChange={(e) => setWebcamIndex(e.target.value)}
+                    min="0"
+                    max="4"
+                    className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-2 text-xs text-white font-mono focus:border-slate-500 focus:outline-none"
+                  />
+                </div>
+              )}
+
+              {sourceType === 'tiktok' && (
+                <div>
+                  <label className="text-[11px] font-mono text-slate-400 block mb-1">TikTok @Username:</label>
+                  <input
+                    type="text"
+                    value={tiktokUsername}
+                    onChange={(e) => setTiktokUsername(e.target.value)}
+                    placeholder="@username"
+                    className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-2 text-xs text-white font-mono focus:border-slate-500 focus:outline-none"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Start / Stop Button */}
+            <div>
+              {!isStreaming ? (
+                <button
+                  type="button"
+                  onClick={handleStartStream}
+                  disabled={loadingStream}
+                  className="w-full flex items-center justify-center space-x-2 py-2.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-mono font-semibold text-xs tracking-wider transition-colors disabled:opacity-50"
+                >
+                  <Play className="w-4 h-4 fill-white" />
+                  <span>{loadingStream ? 'MENGHUBUNGKAN...' : 'MULAI STREAMING'}</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleStopStream}
+                  disabled={loadingStream}
+                  className="w-full flex items-center justify-center space-x-2 py-2.5 rounded bg-red-600 hover:bg-red-500 text-white font-mono font-semibold text-xs tracking-wider transition-colors"
+                >
+                  <Square className="w-4 h-4 fill-white" />
+                  <span>HENTIKAN STREAMING</span>
+                </button>
+              )}
             </div>
           </div>
         )}
-      </div>
 
-      {/* 2. FLOATING CARD LEFT: INPUT STREAM & PARAMETERS */}
-      <div 
-        className={`absolute top-4 left-4 z-40 transition-all duration-300 ${
-          leftCardCollapsed ? 'w-10' : 'w-80'
-        }`}
-      >
-        <div className="tactical-glass rounded-xl shadow-2xl overflow-hidden border border-aerospace-border">
-          {/* Card Header */}
-          <div className="p-3 bg-aerospace-surface/90 border-b border-aerospace-border flex items-center justify-between">
-            {!leftCardCollapsed && (
-              <div className="flex items-center space-x-2">
-                <Sliders className="w-4 h-4 text-tactical-cyan" />
-                <span className="font-mono font-bold text-xs text-white uppercase tracking-wider">
-                  KONTROL INPUT STREAM
-                </span>
-              </div>
-            )}
-            <button
-              onClick={() => setLeftCardCollapsed(!leftCardCollapsed)}
-              className="p-1 rounded text-gray-400 hover:text-white hover:bg-aerospace-border/50 transition-all"
+        {/* Tab 2: Target & Telemetri */}
+        {sidebarTab === 'telemetry' && (
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {/* Status Sektor Card */}
+            <div 
+              className="p-3 rounded border text-center font-mono"
+              style={{
+                backgroundColor: `${telemetry.threat_color_hex}15`,
+                borderColor: `${telemetry.threat_color_hex}50`,
+                color: telemetry.threat_color_hex
+              }}
             >
-              {leftCardCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-            </button>
-          </div>
-
-          {/* Card Body */}
-          {!leftCardCollapsed && (
-            <div className="p-4 space-y-4 max-h-[calc(100vh-8rem)] overflow-y-auto">
-              {/* Sumber Input Selector Grid */}
-              <div>
-                <label className="text-[11px] font-mono text-gray-400 uppercase tracking-wider block mb-2">
-                  Pilih Sumber Input:
-                </label>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {sourceButtons.map(s => {
-                    const Icon = s.icon;
-                    const isSelected = sourceType === s.id;
-                    return (
-                      <button
-                        key={s.id}
-                        onClick={() => setSourceType(s.id)}
-                        className={`flex items-center space-x-2 px-2.5 py-2 rounded text-[11px] font-mono transition-all text-left ${
-                          isSelected
-                            ? 'bg-aerospace-border text-tactical-cyan border border-tactical-cyan/50 shadow-sm'
-                            : 'bg-aerospace-panel/60 text-gray-300 hover:bg-aerospace-border/40'
-                        }`}
-                      >
-                        <Icon className={`w-3.5 h-3.5 ${isSelected ? 'text-tactical-cyan' : 'text-gray-400'}`} />
-                        <span className="truncate">{s.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
+              <div className="font-bold text-xs uppercase tracking-wider">
+                {telemetry.threat_level}
               </div>
-
-              {/* Dynamic Input Details */}
-              <div className="bg-aerospace-panel/50 p-2.5 rounded-lg border border-aerospace-border">
-                {sourceType === 'testbench' && (
-                  <div>
-                    <label className="text-[10px] font-mono text-gray-400 block mb-1">Pilih Video Testbench:</label>
-                    <select
-                      value={selectedVideo}
-                      onChange={(e) => setSelectedVideo(e.target.value)}
-                      className="w-full bg-aerospace-bg border border-aerospace-border rounded px-2 py-1.5 text-xs text-white font-mono focus:border-tactical-cyan focus:outline-none"
-                    >
-                      {testbenchVideos.map(v => (
-                        <option key={v.filename} value={v.filename}>
-                          {v.display_name} ({v.size_mb} MB)
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {sourceType === 'youtube' && (
-                  <div>
-                    <label className="text-[10px] font-mono text-gray-400 block mb-1">YouTube Video / Live URL:</label>
-                    <input
-                      type="text"
-                      value={youtubeUrl}
-                      onChange={(e) => setYoutubeUrl(e.target.value)}
-                      placeholder="https://www.youtube.com/watch?v=..."
-                      className="w-full bg-aerospace-bg border border-aerospace-border rounded px-2 py-1.5 text-xs text-white font-mono focus:border-tactical-cyan focus:outline-none"
-                    />
-                  </div>
-                )}
-
-                {sourceType === 'network' && (
-                  <div>
-                    <label className="text-[10px] font-mono text-gray-400 block mb-1">RTSP / UDP / SDP Path:</label>
-                    <input
-                      type="text"
-                      value={networkUrl}
-                      onChange={(e) => setNetworkUrl(e.target.value)}
-                      placeholder="udp://192.168.2.1:5602"
-                      className="w-full bg-aerospace-bg border border-aerospace-border rounded px-2 py-1.5 text-xs text-white font-mono focus:border-tactical-cyan focus:outline-none"
-                    />
-                  </div>
-                )}
-
-                {sourceType === 'screen' && (
-                  <div>
-                    <label className="text-[10px] font-mono text-gray-400 block mb-1">Pilih Window Software:</label>
-                    <select
-                      value={selectedWindow}
-                      onChange={(e) => setSelectedWindow(e.target.value)}
-                      className="w-full bg-aerospace-bg border border-aerospace-border rounded px-2 py-1.5 text-xs text-white font-mono focus:border-tactical-cyan focus:outline-none"
-                    >
-                      {activeWindows.map(w => (
-                        <option key={w} value={w}>{w}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {sourceType === 'webcam' && (
-                  <div>
-                    <label className="text-[10px] font-mono text-gray-400 block mb-1">Indeks USB Webcam:</label>
-                    <input
-                      type="number"
-                      value={webcamIndex}
-                      onChange={(e) => setWebcamIndex(e.target.value)}
-                      min="0"
-                      max="4"
-                      className="w-full bg-aerospace-bg border border-aerospace-border rounded px-2 py-1.5 text-xs text-white font-mono focus:border-tactical-cyan focus:outline-none"
-                    />
-                  </div>
-                )}
-
-                {sourceType === 'tiktok' && (
-                  <div>
-                    <label className="text-[10px] font-mono text-gray-400 block mb-1">TikTok @Username / URL:</label>
-                    <input
-                      type="text"
-                      value={tiktokUsername}
-                      onChange={(e) => setTiktokUsername(e.target.value)}
-                      placeholder="@username"
-                      className="w-full bg-aerospace-bg border border-aerospace-border rounded px-2 py-1.5 text-xs text-white font-mono focus:border-tactical-cyan focus:outline-none"
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Start / Stop Button */}
-              <div>
-                {!isStreaming ? (
-                  <button
-                    onClick={handleStartStream}
-                    disabled={loadingStream}
-                    className="w-full flex items-center justify-center space-x-2 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-mono font-bold text-xs tracking-wider shadow-glow-emerald transition-all"
-                  >
-                    <Play className="w-4 h-4 fill-white" />
-                    <span>{loadingStream ? 'MENGHUBUNGKAN...' : 'MULAI STREAMING PENGAWASAN'}</span>
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleStopStream}
-                    disabled={loadingStream}
-                    className="w-full flex items-center justify-center space-x-2 py-2.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-mono font-bold text-xs tracking-wider shadow-glow-red transition-all"
-                  >
-                    <Square className="w-4 h-4 fill-white" />
-                    <span>HENTIKAN STREAMING</span>
-                  </button>
-                )}
-              </div>
-
-              {/* Parameter AI Controls */}
-              <div className="space-y-3 pt-2 border-t border-aerospace-border">
-                <div>
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-[11px] font-mono text-gray-300">Confidence Gate:</span>
-                    <span className="text-xs font-mono font-bold text-tactical-cyan">
-                      {(confidenceGate * 100).toFixed(0)}%
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0.05"
-                    max="0.95"
-                    step="0.05"
-                    value={confidenceGate}
-                    onChange={(e) => handleConfidenceChange(parseFloat(e.target.value))}
-                    className="w-full h-1.5 bg-aerospace-panel rounded-lg appearance-none cursor-pointer accent-tactical-cyan"
-                  />
-                </div>
-
-                {/* Toggles */}
-                <div className="space-y-2">
-                  <button
-                    onClick={handleDuskToggle}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded text-xs font-mono border transition-all ${
-                      duskEnhancer
-                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
-                        : 'bg-aerospace-panel/60 text-gray-400 border-aerospace-border'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-2">
-                      <Moon className="w-3.5 h-3.5" />
-                      <span>Dusk / Low-Light Enhancer</span>
-                    </div>
-                    <span className="font-bold">{duskEnhancer ? 'ON' : 'OFF'}</span>
-                  </button>
-
-                  <button
-                    onClick={handleReticleToggle}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded text-xs font-mono border transition-all ${
-                      reticleVisible
-                        ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50'
-                        : 'bg-aerospace-panel/60 text-gray-400 border-aerospace-border'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-2">
-                      <Crosshair className="w-3.5 h-3.5" />
-                      <span>HUD Reticle Crosshair</span>
-                    </div>
-                    <span className="font-bold">{reticleVisible ? 'ON' : 'OFF'}</span>
-                  </button>
-
-                  <button
-                    onClick={handleLabelsToggle}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded text-xs font-mono border transition-all ${
-                      labelsVisible
-                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
-                        : 'bg-aerospace-panel/60 text-gray-400 border-aerospace-border'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-2">
-                      {labelsVisible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-                      <span>Label & Bounding Boxes</span>
-                    </div>
-                    <span className="font-bold">{labelsVisible ? 'ON' : 'OFF'}</span>
-                  </button>
-                </div>
-
-                {/* Reload Model Button */}
-                <button
-                  onClick={handleReloadModel}
-                  className="w-full flex items-center justify-center space-x-2 py-1.5 rounded bg-aerospace-panel hover:bg-aerospace-border text-gray-300 text-[11px] font-mono border border-aerospace-border transition-all"
-                >
-                  <RefreshCw className="w-3 h-3" />
-                  <span>Muat Ulang Bobot AI (best.pt)</span>
-                </button>
+              <div className="text-[11px] text-slate-300 mt-0.5">
+                {telemetry.hazard_count > 0 
+                  ? `${telemetry.hazard_count} Target Bahaya Terpantau`
+                  : 'Sektor Aman: Tidak Ditemukan Ancaman'
+                }
               </div>
             </div>
-          )}
-        </div>
-      </div>
 
-      {/* 3. FLOATING CARD RIGHT: TACTICAL THREAT MANIFEST */}
-      <div 
-        className={`absolute top-4 right-4 z-40 transition-all duration-300 ${
-          rightCardCollapsed ? 'w-10' : 'w-80'
-        }`}
-      >
-        <div className="tactical-glass rounded-xl shadow-2xl overflow-hidden border border-aerospace-border">
-          {/* Card Header */}
-          <div className="p-3 bg-aerospace-surface/90 border-b border-aerospace-border flex items-center justify-between">
-            <button
-              onClick={() => setRightCardCollapsed(!rightCardCollapsed)}
-              className="p-1 rounded text-gray-400 hover:text-white hover:bg-aerospace-border/50 transition-all"
-            >
-              {rightCardCollapsed ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-            </button>
-            {!rightCardCollapsed && (
-              <div className="flex items-center space-x-2">
-                <span className="font-mono font-bold text-xs text-white uppercase tracking-wider">
-                  TELEMETRI TAKTIS & TARGET
-                </span>
+            {/* Ringkasan Angka */}
+            <div className="grid grid-cols-3 gap-2 text-center font-mono">
+              <div className="bg-slate-950 p-2 rounded border border-slate-800">
+                <div className="text-[10px] text-slate-400">TOTAL</div>
+                <div className="text-lg font-bold text-white font-telemetry">{telemetry.total_objects}</div>
               </div>
-            )}
-          </div>
+              <div className="bg-slate-950 p-2 rounded border border-slate-800">
+                <div className="text-[10px] text-signal-red">BAHAYA</div>
+                <div className="text-lg font-bold text-signal-red font-telemetry">{telemetry.hazard_count}</div>
+              </div>
+              <div className="bg-slate-950 p-2 rounded border border-slate-800">
+                <div className="text-[10px] text-signal-green">NETRAL</div>
+                <div className="text-lg font-bold text-signal-green font-telemetry">{telemetry.neutral_count}</div>
+              </div>
+            </div>
 
-          {/* Card Body */}
-          {!rightCardCollapsed && (
-            <div className="p-4 space-y-4 max-h-[calc(100vh-8rem)] overflow-y-auto">
-              {/* Threat Sector Banner */}
-              <div 
-                className="p-3 rounded-lg border text-center font-mono"
-                style={{
-                  backgroundColor: `${telemetry.threat_color_hex}18`,
-                  borderColor: `${telemetry.threat_color_hex}70`
-                }}
-              >
-                <div 
-                  className="font-bold text-sm tracking-widest uppercase"
-                  style={{ color: telemetry.threat_color_hex }}
-                >
-                  🛡️ {telemetry.threat_level}
-                </div>
-                <div className="text-[10px] text-gray-300 mt-0.5">
-                  {telemetry.hazard_count > 0 
-                    ? `Perhatian: ${telemetry.hazard_count} Target Bahaya Terpantau`
-                    : 'Sektor Aman: Tidak Ditemukan Kombatan/Ranjau'
-                  }
-                </div>
+            {/* Target Manifest List */}
+            <div>
+              <div className="flex justify-between items-center mb-2 text-[11px] font-mono text-slate-400 uppercase">
+                <span>Daftar Target Terdeteksi:</span>
+                <span>{telemetry.detections.length} Objek</span>
               </div>
 
-              {/* Counters */}
-              <div className="grid grid-cols-3 gap-2">
-                <div className="bg-aerospace-panel/70 p-2.5 rounded-lg border border-aerospace-border text-center">
-                  <div className="text-[10px] text-gray-400 font-mono">TOTAL</div>
-                  <div className="text-xl font-bold font-mono text-white telemetry-num">
-                    {telemetry.total_objects}
+              <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
+                {telemetry.detections.length === 0 ? (
+                  <div className="text-center py-8 text-xs text-slate-500 font-mono">
+                    Tidak ada objek terdeteksi dalam frame
                   </div>
-                </div>
-                <div className="bg-aerospace-panel/70 p-2.5 rounded-lg border border-aerospace-border text-center">
-                  <div className="text-[10px] text-tactical-red font-mono">BAHAYA</div>
-                  <div className="text-xl font-bold font-mono text-tactical-red telemetry-num">
-                    {telemetry.hazard_count}
-                  </div>
-                </div>
-                <div className="bg-aerospace-panel/70 p-2.5 rounded-lg border border-aerospace-border text-center">
-                  <div className="text-[10px] text-tactical-emerald font-mono">NETRAL</div>
-                  <div className="text-xl font-bold font-mono text-tactical-emerald telemetry-num">
-                    {telemetry.neutral_count}
-                  </div>
-                </div>
-              </div>
-
-              {/* Live Target Manifest List */}
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-[11px] font-mono text-gray-400 uppercase tracking-wider">
-                    TARGET MANIFEST ({telemetry.detections.length}):
-                  </span>
-                  <span className="text-[10px] font-mono text-tactical-cyan">LIVE</span>
-                </div>
-
-                <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
-                  {telemetry.detections.length === 0 ? (
-                    <div className="text-center py-6 text-xs text-gray-500 font-mono">
-                      Tidak ada objek terdeteksi dalam frame
-                    </div>
-                  ) : (
-                    telemetry.detections.map((det, idx) => (
-                      <div 
-                        key={idx}
-                        className="bg-aerospace-panel/80 p-2 rounded border border-aerospace-border flex items-center justify-between text-xs font-mono hover:border-tactical-cyan/40 transition-all"
-                      >
-                        <div className="flex items-center space-x-2">
-                          <span 
-                            className="w-2 h-2 rounded-full"
-                            style={{ backgroundColor: det.color_hex }}
-                          />
-                          <div>
-                            <div className="font-semibold text-white truncate max-w-[120px]">
-                              {det.display_name}
-                            </div>
-                            <div className="text-[10px] text-gray-400">
-                              Conf: {(det.confidence * 100).toFixed(0)}%
-                            </div>
+                ) : (
+                  telemetry.detections.map((det, idx) => (
+                    <div 
+                      key={idx}
+                      className="bg-slate-950 p-2 rounded border border-slate-800 flex items-center justify-between text-xs font-mono"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <span 
+                          className="w-2.5 h-2.5 rounded-full shrink-0"
+                          style={{ backgroundColor: det.color_hex }}
+                        />
+                        <div className="truncate max-w-[130px]">
+                          <div className="font-semibold text-white truncate">{det.display_name}</div>
+                          <div className="text-[10px] text-slate-400">
+                            Conf: {(det.confidence * 100).toFixed(0)}%
                           </div>
                         </div>
-
-                        <div className="text-right">
-                          <span 
-                            className="px-1.5 py-0.5 rounded text-[10px] font-semibold"
-                            style={{
-                              backgroundColor: `${det.color_hex}25`,
-                              color: det.color_hex
-                            }}
-                          >
-                            {det.threat}
-                          </span>
-                          {det.estimated_distance_m && (
-                            <div className="text-[10px] text-tactical-cyan mt-0.5">
-                              ~{det.estimated_distance_m}m
-                            </div>
-                          )}
-                        </div>
                       </div>
-                    ))
-                  )}
-                </div>
+
+                      <div className="text-right shrink-0">
+                        <span 
+                          className="px-1.5 py-0.5 rounded text-[10px] font-semibold"
+                          style={{
+                            backgroundColor: `${det.color_hex}20`,
+                            color: det.color_hex
+                          }}
+                        >
+                          {det.threat}
+                        </span>
+                        {det.estimated_distance_m && (
+                          <div className="text-[10px] text-signal-cyan mt-0.5 font-telemetry">
+                            ~{det.estimated_distance_m}m
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
+
+        {/* Tab 3: Parameter AI & OSD */}
+        {sidebarTab === 'params' && (
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div>
+              <div className="flex justify-between items-center mb-1 text-xs font-mono">
+                <span className="text-slate-300">Ambang Batas (Confidence):</span>
+                <span className="font-bold text-signal-cyan font-telemetry">
+                  {(confidenceGate * 100).toFixed(0)}%
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0.05"
+                max="0.95"
+                step="0.05"
+                value={confidenceGate}
+                onChange={(e) => handleConfidenceChange(parseFloat(e.target.value))}
+                className="w-full h-1.5 bg-slate-950 rounded appearance-none cursor-pointer accent-signal-cyan"
+              />
+            </div>
+
+            <div className="space-y-2 pt-2 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={handleDuskToggle}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded text-xs font-mono border transition-colors ${
+                  duskEnhancer
+                    ? 'bg-amber-900/30 text-amber-200 border-amber-600/50'
+                    : 'bg-slate-950 text-slate-400 border-slate-800'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <Moon className="w-3.5 h-3.5" />
+                  <span>Dusk / Low-Light Enhancer</span>
+                </div>
+                <span className="font-bold">{duskEnhancer ? 'ON' : 'OFF'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleReticleToggle}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded text-xs font-mono border transition-colors ${
+                  reticleVisible
+                    ? 'bg-cyan-900/30 text-cyan-200 border-cyan-600/50'
+                    : 'bg-slate-950 text-slate-400 border-slate-800'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <Crosshair className="w-3.5 h-3.5" />
+                  <span>HUD Reticle Crosshair</span>
+                </div>
+                <span className="font-bold">{reticleVisible ? 'ON' : 'OFF'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleLabelsToggle}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded text-xs font-mono border transition-colors ${
+                  labelsVisible
+                    ? 'bg-emerald-900/30 text-emerald-200 border-emerald-600/50'
+                    : 'bg-slate-950 text-slate-400 border-slate-800'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  {labelsVisible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                  <span>Label & Bounding Boxes</span>
+                </div>
+                <span className="font-bold">{labelsVisible ? 'ON' : 'OFF'}</span>
+              </button>
+            </div>
+
+            <div className="pt-2 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={handleReloadModel}
+                className="w-full flex items-center justify-center space-x-2 py-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono transition-colors"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Muat Ulang Bobot AI (best.pt)</span>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

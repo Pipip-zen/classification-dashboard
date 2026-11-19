@@ -9,46 +9,42 @@
 body {
   margin: 0;
   padding: 0;
-  background-color: #080B10;
-  color: #E2E8F0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: #0B0F17;
+  color: #F1F5F9;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   overflow-x: hidden;
   user-select: none;
 }
 
-/* Custom Tactical Scrollbar */
+/* Precision Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: #080B10;
+  background: #0B0F17;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1E2C42;
-  border-radius: 3px;
+  background: #1F293D;
+  border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #00E5FF;
+  background: #334155;
 }
 
-/* Glassmorphism Tactical Floating Card */
-.tactical-glass {
-  background: rgba(14, 20, 31, 0.88);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(42, 60, 89, 0.7);
+/* Solid Precision Panel */
+.panel-solid {
+  background-color: #111827;
+  border: 1px solid #1F293D;
 }
 
-.tactical-glass-highlight {
-  background: rgba(21, 30, 46, 0.92);
-  backdrop-filter: blur(14px);
-  border: 1px solid rgba(0, 229, 255, 0.4);
+.panel-card {
+  background-color: #151F32;
+  border: 1px solid #1F293D;
 }
 
-/* Monospace Telemetry Numbers */
-.telemetry-num {
-  font-family: 'JetBrains Mono', Consolas, 'Courier New', monospace;
+/* Monospace Telemetry */
+.font-telemetry {
+  font-family: 'JetBrains Mono', Consolas, monospace;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
 }

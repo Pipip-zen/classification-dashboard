@@ -20,90 +20,87 @@ export const DatasetView: React.FC = () => {
   }, []);
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-aerospace-border pb-4">
-        <div>
-          <h1 className="text-xl font-bold font-mono text-white flex items-center space-x-2">
-            <Database className="w-5 h-5 text-tactical-cyan" />
-            <span>DATASET EXPLORER & TAKSONOMI 12 KELAS AI</span>
-          </h1>
-          <p className="text-xs text-tactical-muted mt-1">
-            Taksonomi terpadu hasil penggabungan domain ROV Danau & Bawah Air dengan Drone Spectator Udara & Darat.
-          </p>
-        </div>
+    <div className="p-4 lg:p-6 max-w-7xl mx-auto space-y-5">
+      <div className="border-b border-slate-800 pb-3">
+        <h1 className="text-lg font-bold font-mono text-slate-100 flex items-center space-x-2">
+          <Database className="w-5 h-5 text-signal-cyan" />
+          <span>DATASET EXPLORER: TAKSONOMI 12 KELAS</span>
+        </h1>
+        <p className="text-xs text-slate-400 mt-0.5">
+          Taksonomi sensorik terpadu wahana ROV Danau dan Drone Spectator Udara.
+        </p>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="tactical-glass p-4 rounded-xl border border-aerospace-border text-center">
-          <div className="text-[10px] font-mono text-gray-400 uppercase">Total Kelas Taksonomi</div>
-          <div className="text-2xl font-bold font-mono text-tactical-cyan mt-1">{classes.length || 12}</div>
-          <div className="text-[11px] text-gray-400 font-mono mt-1">Dual-Domain Terpadu</div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="bg-slate-900 p-3.5 rounded border border-slate-800 text-center font-mono">
+          <div className="text-[10px] text-slate-400 uppercase">Total Kelas</div>
+          <div className="text-2xl font-bold text-signal-cyan mt-1 font-telemetry">{classes.length || 12}</div>
+          <div className="text-[11px] text-slate-500 mt-0.5">Dual-Domain</div>
         </div>
-        <div className="tactical-glass p-4 rounded-xl border border-aerospace-border text-center">
-          <div className="text-[10px] font-mono text-gray-400 uppercase">Sampel Data Training</div>
-          <div className="text-2xl font-bold font-mono text-tactical-emerald mt-1">
+        <div className="bg-slate-900 p-3.5 rounded border border-slate-800 text-center font-mono">
+          <div className="text-[10px] text-slate-400 uppercase">Sampel Training</div>
+          <div className="text-2xl font-bold text-signal-green mt-1 font-telemetry">
             {summary ? summary.train_samples : '...'}
           </div>
-          <div className="text-[11px] text-gray-400 font-mono mt-1">data/unified_dataset/train</div>
+          <div className="text-[11px] text-slate-500 mt-0.5">data/unified_dataset</div>
         </div>
-        <div className="tactical-glass p-4 rounded-xl border border-aerospace-border text-center">
-          <div className="text-[10px] font-mono text-gray-400 uppercase">Sampel Data Validasi</div>
-          <div className="text-2xl font-bold font-mono text-white mt-1">
+        <div className="bg-slate-900 p-3.5 rounded border border-slate-800 text-center font-mono">
+          <div className="text-[10px] text-slate-400 uppercase">Sampel Validasi</div>
+          <div className="text-2xl font-bold text-white mt-1 font-telemetry">
             {summary ? summary.val_samples : '...'}
           </div>
-          <div className="text-[11px] text-gray-400 font-mono mt-1">data/unified_dataset/valid</div>
+          <div className="text-[11px] text-slate-500 mt-0.5">data/unified_dataset</div>
         </div>
-        <div className="tactical-glass p-4 rounded-xl border border-aerospace-border text-center">
-          <div className="text-[10px] font-mono text-gray-400 uppercase">Status Unified YAML</div>
-          <div className="text-lg font-bold font-mono text-tactical-emerald mt-2 flex items-center justify-center space-x-1">
+        <div className="bg-slate-900 p-3.5 rounded border border-slate-800 text-center font-mono">
+          <div className="text-[10px] text-slate-400 uppercase">Status Unified YAML</div>
+          <div className="text-base font-bold text-signal-green mt-2 flex items-center justify-center space-x-1">
             <CheckCircle className="w-4 h-4" />
             <span>TERVERIFIKASI</span>
           </div>
-          <div className="text-[11px] text-gray-400 font-mono mt-1">YOLOv8 best.pt Ready</div>
+          <div className="text-[11px] text-slate-500 mt-0.5">YOLOv8 Ready</div>
         </div>
       </div>
 
       {/* Grid 12 Kelas Taksonomi */}
-      <div className="tactical-glass p-5 rounded-xl border border-aerospace-border space-y-4">
-        <h2 className="text-xs font-mono font-bold text-gray-300 uppercase tracking-wider">
-          Taksonomi Terpadu 12 Kelas Sensorik
+      <div className="bg-slate-900 p-4 rounded border border-slate-800 space-y-3">
+        <h2 className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider">
+          Daftar Taksonomi 12 Kelas Sensorik
         </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
           {classes.map((cls) => (
             <div 
               key={cls.class_id}
-              className="bg-aerospace-panel/80 p-3.5 rounded-lg border border-aerospace-border hover:border-tactical-cyan/40 transition-all flex flex-col justify-between"
+              className="bg-slate-950 p-3 rounded border border-slate-800 flex flex-col justify-between"
             >
               <div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <span 
-                      className="w-3 h-3 rounded-full shadow-sm"
+                      className="w-2.5 h-2.5 rounded-full shrink-0"
                       style={{ backgroundColor: cls.color_hex }}
                     />
-                    <span className="font-mono font-bold text-sm text-white">
+                    <span className="font-mono font-bold text-xs text-white">
                       {cls.display}
                     </span>
                   </div>
-                  <span className="font-mono text-xs text-gray-500">ID #{cls.class_id}</span>
+                  <span className="font-mono text-[11px] text-slate-500 font-telemetry">ID #{cls.class_id}</span>
                 </div>
 
-                <div className="mt-2 text-xs font-mono text-gray-400">
+                <div className="mt-1.5 text-xs font-mono text-slate-400">
                   {cls.threat_label}
                 </div>
               </div>
 
-              <div className="mt-3 pt-2.5 border-t border-aerospace-border/60 flex items-center justify-between text-[11px] font-mono">
-                <span className="text-gray-400">
-                  Domain: <b className="text-gray-200">{cls.domain}</b>
+              <div className="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-mono">
+                <span className="text-slate-400">
+                  Domain: <b className="text-slate-300">{cls.domain}</b>
                 </span>
                 <span 
-                  className="px-2 py-0.5 rounded text-[10px] font-bold"
+                  className="px-2 py-0.5 rounded text-[10px] font-semibold"
                   style={{
-                    backgroundColor: `${cls.color_hex}25`,
+                    backgroundColor: `${cls.color_hex}20`,
                     color: cls.color_hex
                   }}
                 >
