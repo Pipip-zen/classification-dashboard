@@ -39,6 +39,11 @@ wandb/
 *.tmp
 testbench_samples/patrol_snapshots/
 
+# Node & Frontend
+frontend/node_modules/
+frontend/.oxc/
+.npm/
+
 # OS generated
 .DS_Store
 Thumbs.db
