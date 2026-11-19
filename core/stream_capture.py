@@ -17,6 +17,7 @@ Deskripsi:
 """
 
 import os
+import re
 import cv2
 import numpy as np
 from typing import Optional, Tuple, Any
@@ -239,9 +240,16 @@ class StreamCapture:
                     return False, "OpenCV gagal membuka stream URL TikTok."
         except Exception as e:
             err_msg = str(e)
-            if "offline" in err_msg.lower():
-                return False, "Kreator saat ini sedang OFFLINE. Pastikan akun sedang menyiarkan Live."
-            return False, f"Gagal mengekstrak stream TikTok: {err_msg}"
+            # Bersihkan escape sequence ANSI terminal jika ada
+            clean_err = re.sub(r'\x1b\[[0-9;]*[a-zA-Z]', '', err_msg).strip()
+            clean_err = clean_err.replace("[0;31m", "").replace("[0m", "")
+
+            lower_err = clean_err.lower()
+            if any(k in lower_err for k in ["offline", "not currently live", "is not live", "channel is not live", "not live"]):
+                return False, f"Akun '{clean_input}' sedang OFFLINE (tidak menyiarkan Live). Pastikan akun sedang aktif live, atau buka live di browser lalu gunakan mode 'Screen Capture' di GCS."
+            if "captcha" in lower_err or "verify" in lower_err or "blocked" in lower_err:
+                return False, "TikTok membatasi akses bot (Captcha). Solusi praktis: buka Live di browser Anda, lalu pilih mode 'Screen Capture' di GCS."
+            return False, f"Gagal mengekstrak stream TikTok: {clean_err}"
 
     def capture_screen_region(
         self,

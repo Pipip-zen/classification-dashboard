@@ -376,14 +376,17 @@ export const LiveCockpit: React.FC<LiveCockpitProps> = ({
 
               {sourceType === 'tiktok' && (
                 <div>
-                  <label className="text-[11px] font-mono text-slate-400 block mb-1">TikTok @Username:</label>
+                  <label className="text-[11px] font-mono text-slate-400 block mb-1">TikTok @Username / Direct URL:</label>
                   <input
                     type="text"
                     value={tiktokUsername}
                     onChange={(e) => setTiktokUsername(e.target.value)}
-                    placeholder="@username"
+                    placeholder="@username atau URL live"
                     className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-2 text-xs text-white font-mono focus:border-slate-500 focus:outline-none"
                   />
+                  <p className="text-[10px] text-slate-500 mt-1 font-mono">
+                    Pastikan akun sedang LIVE aktif. Jika offline atau terkena batasan, buka di browser lalu gunakan mode Screen Capture.
+                  </p>
                 </div>
               )}
             </div>
