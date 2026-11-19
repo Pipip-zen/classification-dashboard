@@ -4,6 +4,9 @@ echo =======================================================
 echo   MEMULAI TACTICAL AI GROUND CONTROL STATION (GCS)
 echo =======================================================
 cd /d "%~dp0"
-call .venv\Scripts\activate.bat
-python run.py
+if exist ".venv\Scripts\python.exe" (
+    ".venv\Scripts\python.exe" run.py
+) else (
+    python run.py
+)
 pause
