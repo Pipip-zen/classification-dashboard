@@ -57,7 +57,13 @@ def run_tests():
         assert "TACTICAL AI RECONNAISSANCE GCS" in res.text or "<div id=\"root\">" in res.text
         print("[6/8] Single-Port Static Serving (index.html): [OK]")
 
-        # 7. Test Media Analysis (Image Upload)
+        # 7. Test Media Analysis (Image Upload & Video Offline)
+        res = client.get("/api/analysis/samples")
+        assert res.status_code == 200
+        samples_data = res.json()
+        assert len(samples_data["images"]) > 0
+        assert len(samples_data["videos"]) > 0
+
         dummy_img = np.zeros((480, 640, 3), dtype=np.uint8)
         dummy_img[100:300, 100:300] = [0, 255, 0]
         _, buf = cv2.imencode('.jpg', dummy_img)
@@ -66,7 +72,14 @@ def run_tests():
         assert res.status_code == 200
         analysis = res.json()
         assert "annotated_image_url" in analysis
-        print(f"[7/8] Media Analysis Inference: {analysis['resolution']} in {analysis['latency_ms']}ms [OK]")
+        print(f"[7/8] Media Analysis (Image): {analysis['resolution']} in {analysis['latency_ms']}ms [OK]")
+
+        # Test Offline Video Analysis
+        res_vid = client.post("/api/analysis/video", data={"sample_filename": "drone_forest_person_patrol.mp4", "mode": "drone", "sampling_interval": "30"})
+        assert res_vid.status_code == 200
+        v_analysis = res_vid.json()
+        assert v_analysis["success"] is True
+        print(f"      Media Analysis (Video): {v_analysis['duration_s']}s ({v_analysis['sampled_frames']} frame) in {v_analysis['latency_ms']}ms [OK]")
 
         # 8. Test Stop Stream
         res = client.post("/api/stream/stop")
