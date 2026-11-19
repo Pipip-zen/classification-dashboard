@@ -67,12 +67,13 @@ def main():
         print("Silakan jalankan: pip install -r requirements.txt")
         sys.exit(1)
 
-    # Jalankan FastAPI Uvicorn
+    # Jalankan FastAPI Uvicorn dengan auto-reload pada direktori backend
     uvicorn.run(
         "server.main:app",
         host="0.0.0.0",
         port=8000,
-        reload=False,
+        reload=True,
+        reload_dirs=[str(BASE_DIR / "server"), str(BASE_DIR / "core")],
         log_level="info"
     )
 
