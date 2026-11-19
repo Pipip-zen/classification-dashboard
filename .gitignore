@@ -11,6 +11,7 @@ env/
 data/**/images/
 data/**/labels/
 data/raw_bonsai/
+data/raw_enrichment/
 *.cache
 data/*.zip
 data/*.tar.gz

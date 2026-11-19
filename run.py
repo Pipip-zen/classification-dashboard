@@ -45,7 +45,7 @@ def open_browser():
     time.sleep(1.5)
     url = "http://localhost:8000"
     print(f"\n=======================================================")
-    print(f"🛰️  TACTICAL AI RECONNAISSANCE GCS ONLINE!")
+    print(f"🛰️  VANGUARD AI — GROUND CONTROL STATION ONLINE!")
     print(f"🌐  Akses Antarmuka di: {url}")
     print(f"📖  Dokumentasi API di: {url}/docs")
     print(f"=======================================================\n")

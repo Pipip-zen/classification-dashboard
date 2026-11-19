@@ -40,11 +40,11 @@ def train():
     # Hyperparameter yang dioptimalkan untuk GPU RTX A2000 (4GB VRAM)
     results = model.train(
         data=str(data_yaml),
-        epochs=15,            # 15 epochs pada GPU hanya ~3-5 menit
-        imgsz=640,            # Resolusi tajam 640x640 untuk detail karang & ikan
+        epochs=10,            # 10 epochs fine-tuning pada GPU (~3 menit)
+        imgsz=640,            # Resolusi tajam 640x640 untuk detail taktis
         batch=16,             # Pas untuk 4GB VRAM YOLOv8n
         device=device,
-        patience=8,           # Early stopping jika tidak membaik dalam 8 epoch
+        patience=6,           # Early stopping jika tidak membaik dalam 6 epoch
         save=True,
         project=str(models_dir),
         name="tactical_yolo_run",

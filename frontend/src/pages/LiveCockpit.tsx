@@ -187,7 +187,7 @@ export const LiveCockpit: React.FC<LiveCockpitProps> = ({
         <div className="flex-1 relative flex items-center justify-center overflow-hidden">
           <img
             src="/api/stream/feed"
-            alt="Tactical Video Stream"
+            alt="VANGUARD Video Stream"
             className="w-full h-full object-contain pointer-events-none select-none"
           />
 

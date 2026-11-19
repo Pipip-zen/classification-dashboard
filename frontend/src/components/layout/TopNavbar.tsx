@@ -37,9 +37,14 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
     <header className="h-14 bg-slate-900 border-b border-slate-800 px-3 lg:px-5 flex items-center justify-between select-none z-30 sticky top-0">
       {/* Brand & Cockpit Switcher */}
       <div className="flex items-center space-x-3 shrink-0">
-        <span className="font-mono font-bold text-sm tracking-wide text-white">
-          Tactical GCS
-        </span>
+        <div className="flex items-center space-x-2">
+          <span className="font-mono font-extrabold text-sm tracking-wider text-emerald-400">
+            VANGUARD
+          </span>
+          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-950/80 border border-emerald-500/30 text-emerald-300 font-semibold uppercase tracking-wider">
+            AI GCS
+          </span>
+        </div>
 
         {/* Cockpit Mode Toggle */}
         <div className="flex items-center bg-slate-950 p-0.5 rounded border border-slate-800">

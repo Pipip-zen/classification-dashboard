@@ -49,23 +49,6 @@ def create_video_from_images(
             offset_y = int(40 * np.sin(progress * np.pi))
 
             frame = raw_bgr[offset_y : offset_y + target_h, offset_x : offset_x + target_w].copy()
-
-            # Tambahkan OSD Telemetri Taktis
-            timestamp = f"T+{(frame_counter / fps):05.1f}s"
-
-            if overlay_type == "rov":
-                depth = 14.5 + 2.0 * np.sin(frame_counter * 0.05)
-                heading = int((120 + frame_counter * 0.2) % 360)
-                osd_text = f"ROV DEEP-SURV // DEPTH: {depth:.1f}m // HDG: {heading:03d} // {timestamp}"
-                cv2.putText(frame, osd_text, (40, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2, cv2.LINE_AA)
-                cv2.rectangle(frame, (30, 25), (780, 65), (0, 255, 255), 1)
-            else:
-                alt = 45.0 + 3.0 * np.cos(frame_counter * 0.04)
-                spd = 18.2 + 1.5 * np.sin(frame_counter * 0.08)
-                osd_text = f"DRONE FPV-RECON // ALT: {alt:.1f}m // SPD: {spd:.1f}km/h // {timestamp}"
-                cv2.putText(frame, osd_text, (40, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 230, 255), 2, cv2.LINE_AA)
-                cv2.rectangle(frame, (30, 25), (820, 65), (0, 230, 255), 1)
-
             out.write(frame)
 
     out.release()

@@ -1,8 +1,9 @@
-# Tactical AI Surveillance & Reconnaissance GCS
-**Ground Control Station (ROV Danau & Drone Spectator)**
+# VANGUARD AI — Tactical Ground Control Station
+**Visual AI for Neutralization & Ground-Aquatic Reconnaissance Drone (ROV Danau & Drone Spectator)**
 
 * **Mata Kuliah:** Workshop Kecerdasan Buatan (Image Classification & Object Detection)
 * **Kelompok:** Kelompok 1
+* **Nama Sistem:** **VANGUARD AI** (*Visual AI for Neutralization & Ground-Aquatic Reconnaissance Drone*)
 * **Arsitektur:** Decoupled High-Performance Python Backend (FastAPI) + Modern Web Workstation (React, TypeScript, Tailwind CSS)
 * **Single-Port Serving:** Port 8000 (`http://localhost:8000`)
 * **AI Core:** PyTorch CUDA, Ultralytics YOLOv8n (`models/best.pt`), OpenCV

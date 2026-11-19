@@ -29,6 +29,7 @@ except ImportError:
     TORCH_AVAILABLE = False
 
 from core.threat_evaluator import ThreatEvaluator
+from core.temporal_tracker import TemporalTracker
 
 
 class TacticalDetector:
@@ -71,9 +72,14 @@ class TacticalDetector:
 
         self.model = None
         self.model_loaded = False
+        self.tracker = TemporalTracker(iou_threshold=0.35, max_age=15)
 
         if model_path:
             self.load_model(model_path)
+
+    def reset_tracker(self):
+        """Mereset riwayat tracking temporal saat berganti stream/video."""
+        self.tracker = TemporalTracker(iou_threshold=0.35, max_age=15)
 
     def load_model(self, model_path: str) -> Tuple[bool, str]:
         if not YOLO_AVAILABLE:
@@ -185,7 +191,7 @@ class TacticalDetector:
         detected_class_ids = []
         hazard_count = 0
         neutral_count = 0
-        render_queue = []
+        raw_candidates = []
 
         if results and len(results) > 0:
             boxes = results[0].boxes
@@ -238,58 +244,76 @@ class TacticalDetector:
                         conf=conf
                     )
 
-                detected_class_ids.append(cls_id)
-                info = ThreatEvaluator.get_info_by_class_id(cls_id)
-
-                display_name = info["display"]
-                threat_label = info["threat_label"]
-                color_bgr = info["color_bgr"]
-                threat_status = info["threat"]
-
-                # PENCATATAN STATISTIK TAKTIS BERDASARKAN KELAS MURNI (TANPA OVERRIDE WARNA BAJU)
-                if cls_id == 0:
-                    drone_stats["soldier"] += 1
-                elif cls_id == 1:
-                    drone_stats["military_vehicle"] += 1
-                elif cls_id == 2:
-                    drone_stats["civilian"] += 1
-                elif cls_id == 3:
-                    rov_stats["ship"] += 1
-                elif cls_id == 4:
-                    rov_stats["submarine"] += 1
-                elif cls_id == 5:
-                    rov_stats["marine_life"] += 1
-                elif cls_id == 6:
-                    rov_stats["coral_reef"] += 1
-                elif cls_id == 7:
-                    rov_stats["rov"] += 1
-                elif cls_id == 8:
-                    drone_stats["fpv_drone"] += 1
-                elif cls_id == 9:
-                    drone_stats["tree"] += 1
-                elif cls_id == 10:
-                    drone_stats["building"] += 1
-                elif cls_id == 11:
-                    rov_stats["diver"] += 1
-
-                is_hazard = (threat_status == "HAZARD")
-                if is_hazard:
-                    hazard_count += 1
-                else:
-                    neutral_count += 1
-
-                det_item = {
+                raw_candidates.append({
                     "class_id": cls_id,
-                    "class_name": info["name"],
-                    "display_name": display_name,
                     "confidence": conf,
-                    "box": [int(x1), int(y1), int(x2), int(y2)],
-                    "threat": threat_status,
-                    "threat_label": threat_label,
-                    "color_bgr": color_bgr
-                }
-                detections.append(det_item)
-                render_queue.append((x1, y1, x2, y2, color_bgr, display_name, conf))
+                    "box": [int(x1), int(y1), int(x2), int(y2)]
+                })
+
+        # TEMPORAL TRACKING & CLASS SMOOTHING (Mencegah Civilian <-> Soldier flickering)
+        smoothed_candidates = self.tracker.update(raw_candidates)
+
+        render_queue = []
+        for cand in smoothed_candidates:
+            cls_id = cand["class_id"]
+            conf = cand["confidence"]
+            bx = cand["box"]
+            x1, y1, x2, y2 = int(bx[0]), int(bx[1]), int(bx[2]), int(bx[3])
+            x1, y1 = max(0, x1), max(0, y1)
+            x2, y2 = min(w, x2), min(h, y2)
+
+            detected_class_ids.append(cls_id)
+            info = ThreatEvaluator.get_info_by_class_id(cls_id)
+
+            display_name = info["display"]
+            threat_label = info["threat_label"]
+            color_bgr = info["color_bgr"]
+            threat_status = info["threat"]
+
+            # PENCATATAN STATISTIK TAKTIS BERDASARKAN KELAS STABIL
+            if cls_id == 0:
+                drone_stats["soldier"] += 1
+            elif cls_id == 1:
+                drone_stats["military_vehicle"] += 1
+            elif cls_id == 2:
+                drone_stats["civilian"] += 1
+            elif cls_id == 3:
+                rov_stats["ship"] += 1
+            elif cls_id == 4:
+                rov_stats["submarine"] += 1
+            elif cls_id == 5:
+                rov_stats["marine_life"] += 1
+            elif cls_id == 6:
+                rov_stats["coral_reef"] += 1
+            elif cls_id == 7:
+                rov_stats["rov"] += 1
+            elif cls_id == 8:
+                drone_stats["fpv_drone"] += 1
+            elif cls_id == 9:
+                drone_stats["tree"] += 1
+            elif cls_id == 10:
+                drone_stats["building"] += 1
+            elif cls_id == 11:
+                rov_stats["diver"] += 1
+
+            if threat_status == "HAZARD":
+                hazard_count += 1
+            else:
+                neutral_count += 1
+
+            det_item = {
+                "track_id": cand.get("track_id", 0),
+                "class_id": cls_id,
+                "class_name": info["name"],
+                "display_name": display_name,
+                "confidence": conf,
+                "box": [int(x1), int(y1), int(x2), int(y2)],
+                "threat": threat_status,
+                "threat_label": threat_label,
+                "color_bgr": color_bgr
+            }
+            detections.append(det_item)
+            render_queue.append((x1, y1, x2, y2, color_bgr, display_name, conf))
 
         # RENDER VISUAL ADAPTIF: Otomatis aktifkan compact_mode jika objek > 12 agar layar tidak tertutup
         is_crowded = len(render_queue) > 12

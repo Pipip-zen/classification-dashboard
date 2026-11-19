@@ -199,33 +199,43 @@ class ThreatEvaluator:
     ) -> int:
         """
         Anti-Misclassification Engine Mode Drone (Foliage & Tree Guard):
-        Mencegah tanaman hias, pohon pangkas, atau bonsai berpenampilan rapi/bulat
-        disalahartikan sebagai kendaraan (military_vehicle / vehicle).
-        Jika objek terdeteksi sebagai vehicle (1), namun memiliki karakteristik vegetasi:
-        1. Indeks Warna Klorofil / Daun (Excess Green Index: 2G - R - B > 0 atau spektrum hijau-kuning dominan).
-        2. Tekstur Granular / Daun (varians gradien Laplacian tinggi khas dedaunan vs pelat logam halus mobil).
-        Maka otomatis direklasifikasi secara cerdas ke kelas 9 (tree: Pohon / Vegetasi).
+        Hanya aktif jika AI ragu-ragu (conf < 0.45) dan area INTI tengah (center crop)
+        didominasi dedaunan organik (> 50% green foliage ratio).
+        Mencegah helikopter, mobil, dan bangunan yang berada di dekat rumput
+        salah di-remap menjadi pohon.
         """
-        if class_id == 1 and cropped_bgr is not None and cropped_bgr.size > 20: # vehicle
-            try:
-                # 1. Analisis Klorofil via Color Space (Excess Green Index & HSV)
-                b, g, r = cv2.split(cropped_bgr.astype(np.float32))
-                exg = (2.0 * g) - r - b
-                green_foliage_ratio = np.count_nonzero(exg > 4.0) / float(cropped_bgr.shape[0] * cropped_bgr.shape[1])
+        # Jangan pernah ubah jika model sudah yakin (conf >= 0.45) atau bukan kendaraan
+        if class_id != 1 or conf >= 0.45:
+            return class_id
 
-                hsv = cv2.cvtColor(cropped_bgr, cv2.COLOR_BGR2HSV)
-                # Rentang Hue dedaunan/tanaman (hijau zaitun, hijau daun, hijau tua): Hue 25 s/d 85
-                lower_foliage = np.array([25, 20, 20])
+        if cropped_bgr is not None and cropped_bgr.shape[0] > 10 and cropped_bgr.shape[1] > 10:
+            try:
+                ch, cw = cropped_bgr.shape[:2]
+                # Ambil 50% bagian tengah saja (center crop) agar rumput di sekeliling tidak terhitung
+                y_start, y_end = int(ch * 0.25), int(ch * 0.75)
+                x_start, x_end = int(cw * 0.25), int(cw * 0.75)
+                core_crop = cropped_bgr[y_start:y_end, x_start:x_end]
+                
+                if core_crop.size < 20:
+                    return class_id
+
+                # 1. Analisis Klorofil via Color Space (Excess Green Index & HSV)
+                b, g, r = cv2.split(core_crop.astype(np.float32))
+                exg = (2.0 * g) - r - b
+                green_foliage_ratio = np.count_nonzero(exg > 5.0) / float(core_crop.shape[0] * core_crop.shape[1])
+
+                hsv = cv2.cvtColor(core_crop, cv2.COLOR_BGR2HSV)
+                lower_foliage = np.array([25, 30, 30])
                 upper_foliage = np.array([85, 255, 255])
                 foliage_mask = cv2.inRange(hsv, lower_foliage, upper_foliage)
-                hsv_foliage_ratio = np.count_nonzero(foliage_mask) / float(cropped_bgr.shape[0] * cropped_bgr.shape[1])
+                hsv_foliage_ratio = np.count_nonzero(foliage_mask) / float(core_crop.shape[0] * core_crop.shape[1])
 
                 # 2. Analisis Tekstur Organik Dedaunan (Laplacian Variance)
-                gray = cv2.cvtColor(cropped_bgr, cv2.COLOR_BGR2GRAY)
+                gray = cv2.cvtColor(core_crop, cv2.COLOR_BGR2GRAY)
                 lap_var = cv2.Laplacian(gray, cv2.CV_32F).var()
 
-                # Jika objek memiliki dominasi pigmen daun (>18% ExG atau >25% HSV) dan bertekstur organik (lap_var > 40)
-                if (green_foliage_ratio > 0.18 or hsv_foliage_ratio > 0.25) and lap_var > 40.0:
+                # Hanya remap jika inti objek didominasi daun (>50%) dan bertekstur organik acak (lap_var > 50)
+                if (green_foliage_ratio > 0.50 or hsv_foliage_ratio > 0.55) and lap_var > 50.0:
                     return 9 # Remap ke tree (Pohon / Vegetasi)
             except Exception:
                 pass

@@ -43,7 +43,7 @@ class StreamWorker:
     def set_event_loop(self, loop: asyncio.AbstractEventLoop):
         self.loop = loop
 
-    def _generate_standby_frame(self, message: str = "GCS TACTICAL STANDBY // WAITING FOR FEED") -> bytes:
+    def _generate_standby_frame(self, message: str = "VANGUARD TACTICAL STANDBY // WAITING FOR FEED") -> bytes:
         img = np.zeros((720, 1280, 3), dtype=np.uint8)
         img[:] = (10, 14, 20)  # Dark slate background
         
@@ -60,13 +60,23 @@ class StreamWorker:
         cv2.line(img, (cx - 150, cy), (cx + 150, cy), (0, 229, 255), 1)
         cv2.line(img, (cx, cy - 150), (cx, cy + 150), (0, 229, 255), 1)
         
-        # Teks Standby
-        cv2.putText(img, "TACTICAL AI RECONNAISSANCE GCS", (cx - 280, cy - 180),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 229, 255), 2, cv2.LINE_AA)
-        cv2.putText(img, message, (cx - 290, cy + 200),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 255, 102), 2, cv2.LINE_AA)
-        cv2.putText(img, "STATUS: READY // SELECT SOURCE IN GCS HUD", (cx - 230, cy + 235),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.55, (100, 116, 139), 1, cv2.LINE_AA)
+        # Helper untuk menempatkan teks tepat di tengah secara horizontal
+        def draw_centered(text: str, y: int, font, scale: float, color: tuple, thickness: int):
+            (w, _), _ = cv2.getTextSize(text, font, scale, thickness)
+            x = (1280 - w) // 2
+            cv2.putText(img, text, (x, y), font, scale, color, thickness, cv2.LINE_AA)
+
+        # Header VANGUARD AI
+        draw_centered("VANGUARD AI // TACTICAL GCS", cy - 190,
+                      cv2.FONT_HERSHEY_SIMPLEX, 0.95, (0, 229, 255), 2)
+        draw_centered("VISUAL AI FOR NEUTRALIZATION & GROUND-AQUATIC RECONNAISSANCE", cy - 160,
+                      cv2.FONT_HERSHEY_SIMPLEX, 0.45, (100, 149, 237), 1)
+
+        # Teks Standby & Status
+        draw_centered(message, cy + 205,
+                      cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 255, 128), 2)
+        draw_centered("STATUS: READY // SELECT SOURCE IN VANGUARD HUD", cy + 240,
+                      cv2.FONT_HERSHEY_SIMPLEX, 0.52, (100, 116, 139), 1)
         
         _, buf = cv2.imencode('.jpg', img, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
         return buf.tobytes()

@@ -46,8 +46,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Tactical AI Reconnaissance & Combat GCS",
-    description="Ground Control Station Terpadu untuk Wahana ROV Danau & Drone Spectator",
+    title="VANGUARD AI — Ground Control Station",
+    description="VANGUARD AI: Visual AI for Neutralization & Ground-Aquatic Reconnaissance Drone (ROV Danau & Drone Spectator)",
     version="2.0.0",
     lifespan=lifespan
 )
