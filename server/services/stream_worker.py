@@ -141,6 +141,7 @@ class StreamWorker:
                     state.source_type = source_type
                     state.source_param = source_param
                     state.stream_active = True
+                    state.orientation_estimator.reset()
                     self.running = True
                     self.worker_thread = threading.Thread(target=self._run_loop, daemon=True)
                     self.worker_thread.start()
@@ -157,9 +158,29 @@ class StreamWorker:
             self.worker_thread.join(timeout=1.0)
         self.worker_thread = None
         self.stream_capture.release()
+        state.orientation_estimator.reset()
+        state.orientation_estimator.set_north()
         state.stream_active = False
         state.current_fps = 0.0
         self.latest_jpeg = self._standby_jpeg
+
+        # Reset telemetri navigasi dan target ke 0 / N saat stream berhenti
+        state.latest_telemetry["heading_deg"] = 0.0
+        state.latest_telemetry["cardinal"] = "N"
+        state.latest_telemetry["turn_rate_dps"] = 0.0
+        state.latest_telemetry["total_objects"] = 0
+        state.latest_telemetry["hazard_count"] = 0
+        state.latest_telemetry["neutral_count"] = 0
+        state.latest_telemetry["detections"] = []
+
+        if self.loop and self.loop.is_running() and state.active_websockets:
+            try:
+                asyncio.run_coroutine_threadsafe(
+                    state.broadcast_telemetry(state.latest_telemetry),
+                    self.loop
+                )
+            except Exception:
+                pass
 
     def get_latest_frame(self) -> bytes:
         if self.latest_jpeg is not None:
@@ -246,6 +267,9 @@ class StreamWorker:
                 state.current_fps = round(last_calc_fps, 1)
                 state.last_latency_ms = round(infer_latency, 1)
 
+            # Estimasi Orientasi / Kompas Visual (Optical Flow Yaw Tracking)
+            heading_info = state.orientation_estimator.update(frame)
+
             # Encode ke JPEG
             encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 80]
             _, jpeg_buf = cv2.imencode('.jpg', annotated_frame, encode_param)
@@ -266,6 +290,11 @@ class StreamWorker:
                 "confidence_gate": state.confidence_gate,
                 "dusk_enhancer": state.dusk_enhancer,
                 "frame_size": {"width": w, "height": h},
+                "heading_deg": heading_info.get("heading_deg", 0.0),
+                "cardinal": heading_info.get("cardinal", "N"),
+                "turn_rate_dps": heading_info.get("turn_rate_dps", 0.0),
+                "compass_calibrated": heading_info.get("is_calibrated", False),
+                "tracked_compass_points": heading_info.get("tracked_points", 0),
                 "detections": valid_dets
             }
             state.latest_telemetry = telemetry_payload

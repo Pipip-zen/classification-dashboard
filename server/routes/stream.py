@@ -32,6 +32,11 @@ class StreamConfigRequest(BaseModel):
     compact_hud: Optional[bool] = None
 
 
+class CompassCalibrateRequest(BaseModel):
+    action: str = "set_north"  # 'set_north' | 'set_offset' | 'reset'
+    offset_deg: Optional[float] = 0.0
+
+
 async def frame_generator():
     """Generator untuk streaming multipart JPEG ke browser."""
     while True:
@@ -80,6 +85,28 @@ def update_config(req: StreamConfigRequest):
             "labels_visible": state.labels_visible,
             "compact_hud": state.compact_hud,
         }
+    }
+
+
+@router.post("/compass/calibrate")
+def calibrate_compass(req: CompassCalibrateRequest):
+    """Mengalibrasi kompas visual: Set North (000°) atau manual offset derajat."""
+    if req.action == "set_north":
+        new_hdg = state.orientation_estimator.set_north()
+    elif req.action == "set_offset" and req.offset_deg is not None:
+        new_hdg = state.orientation_estimator.set_heading(req.offset_deg)
+    elif req.action == "reset":
+        state.orientation_estimator.reset()
+        new_hdg = state.orientation_estimator.current_heading_deg
+    else:
+        new_hdg = state.orientation_estimator.current_heading_deg
+
+    return {
+        "success": True,
+        "action": req.action,
+        "heading_deg": round(new_hdg, 1),
+        "cardinal": state.orientation_estimator.deg_to_cardinal(new_hdg),
+        "is_calibrated": state.orientation_estimator.is_calibrated
     }
 
 

@@ -14,6 +14,9 @@ const defaultTelemetry: TelemetryData = {
   neutral_count: 0,
   fps: 0,
   latency_ms: 0,
+  heading_deg: 0,
+  cardinal: 'N',
+  turn_rate_dps: 0,
   detections: []
 };
 

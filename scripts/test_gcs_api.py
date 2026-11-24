@@ -81,13 +81,25 @@ def run_tests():
         assert v_analysis["success"] is True
         print(f"      Media Analysis (Video): {v_analysis['duration_s']}s ({v_analysis['sampled_frames']} frame) in {v_analysis['latency_ms']}ms [OK]")
 
-        # 8. Test Stop Stream
+        # 8. Test Compass Calibration
+        res_cal = client.post("/api/stream/compass/calibrate", json={"action": "set_north"})
+        assert res_cal.status_code == 200
+        assert res_cal.json()["heading_deg"] == 0.0
+        assert res_cal.json()["cardinal"] == "N"
+
+        res_off = client.post("/api/stream/compass/calibrate", json={"action": "set_offset", "offset_deg": 90.0})
+        assert res_off.status_code == 200
+        assert res_off.json()["heading_deg"] == 90.0
+        assert res_off.json()["cardinal"] == "E"
+        print("[8/9] Compass Calibration (Set North & Offset): [OK]")
+
+        # 9. Test Stop Stream
         res = client.post("/api/stream/stop")
         assert res.status_code == 200
-        print("[8/8] Stop Stream: [OK]")
+        print("[9/9] Stop Stream: [OK]")
 
     print("=" * 60)
-    print("ALL 8/8 TACTICAL GCS BACKEND & FRONTEND TESTS PASSED (100%)")
+    print("ALL 9/9 TACTICAL GCS BACKEND & FRONTEND TESTS PASSED (100%)")
     print("=" * 60)
 
 if __name__ == "__main__":

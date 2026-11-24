@@ -16,6 +16,7 @@ from pathlib import Path
 from core.detector import TacticalDetector
 from core.threat_evaluator import ThreatEvaluator
 from core.distance_estimator import DistanceEstimator
+from core.orientation_estimator import OrientationEstimator
 
 
 class AppState:
@@ -32,6 +33,7 @@ class AppState:
         self.detector = TacticalDetector(self.model_path)
         self.threat_evaluator = ThreatEvaluator()
         self.distance_estimator = DistanceEstimator()
+        self.orientation_estimator = OrientationEstimator()
         
         # State Operasional
         self.cockpit_mode: str = "drone"  # 'drone' | 'rov'
@@ -58,6 +60,10 @@ class AppState:
             "neutral_count": 0,
             "fps": 0.0,
             "latency_ms": 0.0,
+            "heading_deg": 0.0,
+            "cardinal": "N",
+            "turn_rate_dps": 0.0,
+            "compass_calibrated": False,
             "detections": []
         }
         

@@ -25,6 +25,11 @@ export interface TelemetryData {
   confidence_gate?: number;
   dusk_enhancer?: boolean;
   frame_size?: { width: number; height: number };
+  heading_deg?: number;
+  cardinal?: string;
+  turn_rate_dps?: number;
+  compass_calibrated?: boolean;
+  tracked_compass_points?: number;
   detections: Detection[];
 }
 
