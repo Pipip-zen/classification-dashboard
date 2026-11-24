@@ -28,6 +28,8 @@ else
 fi
 
 sudo apt-get install -y git curl ufw docker-compose-plugin
+sudo systemctl enable docker
+sudo systemctl start docker
 
 # 3. Konfigurasi Firewall UFW
 echo "[3/5] Mengatur firewall (UFW)..."
@@ -39,14 +41,20 @@ sudo ufw allow 5602/udp comment "ROV / Drone SDP Stream"
 sudo ufw --force enable
 
 # 4. Inisialisasi Environment
-echo "[4/5] Mempersiapkan file environment..."
+echo "[4/6] Mempersiapkan file environment..."
 if [ ! -f .env ]; then
     cp .env.example .env
     echo "File .env berhasil dibuat dari .env.example."
 fi
 
-# 5. Jalankan Container
-echo "[5/5] Membangun dan menjalankan Tactical GCS container..."
+# 5. Pasang Systemd Auto-Start saat VPS Booting
+echo "[5/6] Mendaftarkan layanan auto-start ke systemd..."
+sudo cp deploy/tactical-gcs-docker.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable tactical-gcs-docker.service
+
+# 6. Jalankan Container di Background
+echo "[6/6] Membangun dan menjalankan Tactical GCS container di background..."
 docker compose up -d --build
 
 echo ""
