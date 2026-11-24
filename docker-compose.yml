@@ -20,3 +20,14 @@ services:
       timeout: 5s
       retries: 3
       start_period: 15s
+
+  # Cloudflare Tunnel Service (Zero-Port, Auto-SSL HTTPS & DDoS Protected)
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: tactical-gcs-tunnel
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      tactical-gcs:
+        condition: service_healthy
+    profiles: ["tunnel"]
