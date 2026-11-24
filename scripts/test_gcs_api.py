@@ -31,7 +31,7 @@ def run_tests():
         res = client.get("/api/dataset/taxonomy")
         assert res.status_code == 200
         tax = res.json()
-        assert tax["total_classes"] == 12
+        assert tax["total_classes"] == 8
         print(f"[2/8] Taxonomy Classes: {tax['total_classes']} Terpadu [OK]")
 
         # 3. Test Stream Sources

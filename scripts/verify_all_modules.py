@@ -30,21 +30,19 @@ from core.inpainter import ImageInpainter
 from core.stream_capture import StreamCapture
 
 def test_threat_evaluator():
-    print("[1/7] Menguji ThreatEvaluator Taksonomi 12 Kelas...", end="")
-    assert len(ThreatEvaluator.TAXONOMY) == 12, f"Taksonomi harus memiliki 12 kelas, ditemukan: {len(ThreatEvaluator.TAXONOMY)}"
+    print("[1/7] Menguji ThreatEvaluator Taksonomi 8 Kelas...", end="")
+    assert len(ThreatEvaluator.TAXONOMY) == 8, f"Taksonomi harus memiliki 8 kelas, ditemukan: {len(ThreatEvaluator.TAXONOMY)}"
     
     # Uji pemfilteran mode operasional
     assert ThreatEvaluator.is_class_allowed_for_mode(4, "rov"), "Submarine harus aktif di Mode ROV"
     assert ThreatEvaluator.is_class_allowed_for_mode(6, "rov"), "Coral reef harus aktif di Mode ROV"
-    assert ThreatEvaluator.is_class_allowed_for_mode(11, "rov"), "Diver harus aktif di Mode ROV"
+    assert ThreatEvaluator.is_class_allowed_for_mode(7, "rov"), "Diver harus aktif di Mode ROV"
     assert not ThreatEvaluator.is_class_allowed_for_mode(0, "rov"), "Soldier tidak boleh aktif di Mode ROV"
     assert ThreatEvaluator.is_class_allowed_for_mode(0, "drone"), "Soldier harus aktif di Mode Drone"
-    assert ThreatEvaluator.is_class_allowed_for_mode(9, "drone"), "Tree harus aktif di Mode Drone"
-    assert ThreatEvaluator.is_class_allowed_for_mode(10, "drone"), "Building harus aktif di Mode Drone"
+    assert ThreatEvaluator.is_class_allowed_for_mode(3, "drone"), "Tree harus aktif di Mode Drone"
     assert not ThreatEvaluator.is_class_allowed_for_mode(6, "drone"), "Coral reef tidak boleh aktif di Mode Drone"
-    assert not ThreatEvaluator.is_class_allowed_for_mode(11, "drone"), "Diver tidak boleh aktif di Mode Drone"
-    assert not ThreatEvaluator.is_class_allowed_for_mode(3, "drone"), "Perahu/kapal tidak boleh aktif di Mode Drone"
-    assert not ThreatEvaluator.is_class_allowed_for_mode(9, "rov"), "Tree tidak boleh aktif di Mode ROV"
+    assert not ThreatEvaluator.is_class_allowed_for_mode(7, "drone"), "Diver tidak boleh aktif di Mode Drone"
+    assert not ThreatEvaluator.is_class_allowed_for_mode(3, "rov"), "Tree tidak boleh aktif di Mode ROV"
 
     print(" [PASSED]")
     return True

@@ -206,8 +206,8 @@ async def analyze_video(
         hazard_count = 0
         neutral_count = 0
 
-        drone_stats = {"soldier": 0, "civilian": 0, "military_vehicle": 0, "tree": 0, "building": 0, "fpv_drone": 0}
-        rov_stats = {"submarine": 0, "marine_life": 0, "coral_reef": 0, "rov": 0, "ship": 0, "diver": 0}
+        drone_stats = {"soldier": 0, "civilian": 0, "military_vehicle": 0, "tree": 0}
+        rov_stats = {"submarine": 0, "marine_life": 0, "coral_reef": 0, "diver": 0}
 
         detection_logs: List[Dict[str, Any]] = []
         keyframes: List[Dict[str, Any]] = []

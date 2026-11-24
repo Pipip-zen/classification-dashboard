@@ -16,7 +16,7 @@ from typing import Dict, Any, List, Tuple, Set, Optional
 
 
 class ThreatEvaluator:
-    # Taksonomi terpadu 11 kelas (ROV Danau + Drone Aerial Spectator)
+    # Taksonomi terpadu 8 kelas (4 Drone Udara/Darat [0..3] + 4 ROV Danau/Bawah Air [4..7])
     TAXONOMY = {
         0: {
             "name": "soldier",
@@ -52,15 +52,15 @@ class ThreatEvaluator:
             "ref_width_m": 0.5
         },
         3: {
-            "name": "ship",
-            "display": "Perahu / Kapal Permukaan",
-            "domain": "Surface Water",
-            "allowed_modes": {"rov", "all"},
+            "name": "tree",
+            "display": "Pohon / Vegetasi",
+            "domain": "Land",
+            "allowed_modes": {"drone", "all"},
             "threat": "NEUTRAL",
-            "threat_label": "Wahana Permukaan Air",
-            "color_bgr": (0, 165, 255),    # Oranye
-            "color_hex": "#FF9500",
-            "ref_width_m": 8.0
+            "threat_label": "Lanskap / Vegetasi Darat",
+            "color_bgr": (34, 139, 34),    # Forest Green (#228B22)
+            "color_hex": "#228B22",
+            "ref_width_m": 3.0
         },
         4: {
             "name": "submarine",
@@ -96,64 +96,20 @@ class ThreatEvaluator:
             "ref_width_m": 1.5
         },
         7: {
-            "name": "rov",
-            "display": "Wahana ROV Danau",
-            "domain": "Underwater",
-            "allowed_modes": {"rov", "all"},
-            "threat": "NEUTRAL",
-            "threat_label": "ROV Friendly Unit",
-            "color_bgr": (255, 255, 0),
-            "color_hex": "#00E5FF",
-            "ref_width_m": 0.8
-        },
-        8: {
-            "name": "fpv_drone",
-            "display": "Drone FPV (Udara)",
-            "domain": "Land",
-            "allowed_modes": {"drone", "all"},
-            "threat": "NEUTRAL",
-            "threat_label": "Wahana Drone Udara",
-            "color_bgr": (0, 255, 102),
-            "color_hex": "#00FF66",
-            "ref_width_m": 0.4
-        },
-        9: {
-            "name": "tree",
-            "display": "Pohon / Vegetasi",
-            "domain": "Land",
-            "allowed_modes": {"drone", "all"},
-            "threat": "NEUTRAL",
-            "threat_label": "Lanskap / Vegetasi Darat",
-            "color_bgr": (34, 139, 34),    # Forest Green
-            "color_hex": "#228B22",
-            "ref_width_m": 3.0
-        },
-        10: {
-            "name": "building",
-            "display": "Bangunan / Struktur",
-            "domain": "Land",
-            "allowed_modes": {"drone", "all"},
-            "threat": "NEUTRAL",
-            "threat_label": "Struktur / Bangunan Darat",
-            "color_bgr": (211, 211, 211),  # Abu-abu Cerah
-            "color_hex": "#D3D3D3",
-            "ref_width_m": 10.0
-        },
-        11: {
             "name": "diver",
             "display": "Penyelam / Diver",
             "domain": "Underwater",
             "allowed_modes": {"rov", "all"},
             "threat": "NEUTRAL",
             "threat_label": "Penyelam Bawah Air (Scuba Diver)",
-            "color_bgr": (0, 180, 255),    # Biru Langit Cerah (#FFB400 di RGB)
+            "color_bgr": (0, 180, 255),    # Biru Langit Cerah (#00B4FF)
             "color_hex": "#00B4FF",
             "ref_width_m": 0.6
         }
     }
 
-    ROV_ALLOWED_CLASSES: Set[int] = {3, 4, 5, 6, 7, 11}
-    DRONE_ALLOWED_CLASSES: Set[int] = {0, 1, 2, 8, 9, 10}
+    ROV_ALLOWED_CLASSES: Set[int] = {4, 5, 6, 7}
+    DRONE_ALLOWED_CLASSES: Set[int] = {0, 1, 2, 3}
 
     @classmethod
     def sanitize_underwater_target(
@@ -236,7 +192,7 @@ class ThreatEvaluator:
 
                 # Hanya remap jika inti objek didominasi daun (>50%) dan bertekstur organik acak (lap_var > 50)
                 if (green_foliage_ratio > 0.50 or hsv_foliage_ratio > 0.55) and lap_var > 50.0:
-                    return 9 # Remap ke tree (Pohon / Vegetasi)
+                    return 3 # Remap ke tree (Pohon / Vegetasi)
             except Exception:
                 pass
         return class_id
@@ -268,6 +224,23 @@ class ThreatEvaluator:
                 "ref_width_m": 1.0
             }
         )
+
+    @classmethod
+    def get_info_by_name(cls, class_name: str) -> Dict[str, Any]:
+        for cid, info in cls.TAXONOMY.items():
+            if info["name"] == class_name:
+                return info
+        return {
+            "name": class_name,
+            "display": class_name,
+            "domain": "Unknown",
+            "allowed_modes": {"all"},
+            "threat": "UNKNOWN",
+            "threat_label": "Tidak Terdefinisi",
+            "color_bgr": (255, 255, 0),
+            "color_hex": "#FFCC00",
+            "ref_width_m": 1.0
+        }
 
     @classmethod
     def classify_soldier_team(cls, cropped_bgr: np.ndarray) -> Tuple[str, str, Tuple[int, int, int], str]:

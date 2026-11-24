@@ -26,7 +26,7 @@ export const DatasetView: React.FC = () => {
           Dataset & Taksonomi
         </h1>
         <p className="text-xs text-slate-400 mt-0.5">
-          Taksonomi 12 kelas sensorik wahana ROV Danau dan Drone Spectator.
+          Taksonomi 8 kelas sensorik wahana Drone Udara dan ROV Danau.
         </p>
       </div>
 
@@ -34,7 +34,7 @@ export const DatasetView: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="bg-slate-900 p-3.5 rounded border border-slate-800 text-center font-mono">
           <div className="text-[10px] text-slate-400 uppercase">Total Kelas</div>
-          <div className="text-2xl font-bold text-signal-cyan mt-1 font-telemetry">{classes.length || 12}</div>
+          <div className="text-2xl font-bold text-signal-cyan mt-1 font-telemetry">{classes.length || 8}</div>
           <div className="text-[11px] text-slate-500 mt-0.5">Dual-Domain</div>
         </div>
         <div className="bg-slate-900 p-3.5 rounded border border-slate-800 text-center font-mono">
@@ -61,10 +61,10 @@ export const DatasetView: React.FC = () => {
         </div>
       </div>
 
-      {/* Grid 12 Kelas Taksonomi */}
+      {/* Grid 8 Kelas Taksonomi */}
       <div className="bg-slate-900 p-4 rounded border border-slate-800 space-y-3">
         <h2 className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider">
-          Daftar Taksonomi 12 Kelas Sensorik
+          Daftar Taksonomi 8 Kelas Sensorik
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">

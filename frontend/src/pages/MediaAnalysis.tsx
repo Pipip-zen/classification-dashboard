@@ -630,9 +630,6 @@ export const MediaAnalysis: React.FC = () => {
                             <span className="px-2 py-1 rounded bg-slate-900 border border-slate-800 text-slate-300">
                               Kendaraan: <b className="text-white">{videoResult.threat_summary.drone_stats.military_vehicle || 0}</b>
                             </span>
-                            <span className="px-2 py-1 rounded bg-slate-900 border border-slate-800 text-slate-300">
-                              Bangunan: <b className="text-white">{videoResult.threat_summary.drone_stats.building || 0}</b>
-                            </span>
                           </>
                         ) : (
                           <>

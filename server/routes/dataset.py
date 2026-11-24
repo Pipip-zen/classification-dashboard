@@ -15,7 +15,7 @@ router = APIRouter(prefix="/api/dataset", tags=["Dataset & Taxonomy"])
 
 @router.get("/taxonomy")
 def get_taxonomy():
-    """Mengambil daftar 12 taksonomi kelas taktis terpadu."""
+    """Mengambil daftar 8 taksonomi kelas taktis terpadu."""
     tax = ThreatEvaluator.TAXONOMY
     res = []
     for cid, info in tax.items():
@@ -41,7 +41,7 @@ def get_dataset_summary():
     
     dataset_info = {
         "exists": False,
-        "classes_count": 12,
+        "classes_count": 8,
         "train_samples": 0,
         "val_samples": 0,
         "classes_list": []

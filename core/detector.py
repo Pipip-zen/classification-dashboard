@@ -38,15 +38,11 @@ class TacticalDetector:
         0: 0.20,  # soldier / kombatan
         1: 0.20,  # military_vehicle / kendaraan umum
         2: 0.20,  # civilian / pejalan kaki / pengendara
-        8: 0.20,  # fpv_drone
-        3: 0.20,  # ship
+        3: 0.15,  # tree / kanopi vegetasi & batang
         4: 0.20,  # submarine
         5: 0.18,  # marine_life
         6: 0.18,  # coral_reef
-        7: 0.20,  # rov
-        11: 0.20, # diver
-        9: 0.15,  # tree / kanopi vegetasi
-        10: 0.15  # building / struktur bangunan
+        7: 0.20   # diver / penyelam
     }
 
     def __init__(
@@ -132,13 +128,11 @@ class TacticalDetector:
 
         drone_stats = {
             "soldier": 0,
-            "civilian": 0,
             "military_vehicle": 0,
-            "tree": 0,
-            "building": 0,
-            "fpv_drone": 0
+            "civilian": 0,
+            "tree": 0
         }
-        rov_stats = {"submarine": 0, "marine_life": 0, "coral_reef": 0, "rov": 0, "ship": 0, "diver": 0}
+        rov_stats = {"submarine": 0, "marine_life": 0, "coral_reef": 0, "diver": 0}
 
         # Real-time Vision Enhancer (Underwater CLAHE vs Aerial Dusk/Low-Light)
         if enable_clahe and mode.lower() in ["rov", "all"]:
@@ -278,7 +272,7 @@ class TacticalDetector:
             elif cls_id == 2:
                 drone_stats["civilian"] += 1
             elif cls_id == 3:
-                rov_stats["ship"] += 1
+                drone_stats["tree"] += 1
             elif cls_id == 4:
                 rov_stats["submarine"] += 1
             elif cls_id == 5:
@@ -286,14 +280,6 @@ class TacticalDetector:
             elif cls_id == 6:
                 rov_stats["coral_reef"] += 1
             elif cls_id == 7:
-                rov_stats["rov"] += 1
-            elif cls_id == 8:
-                drone_stats["fpv_drone"] += 1
-            elif cls_id == 9:
-                drone_stats["tree"] += 1
-            elif cls_id == 10:
-                drone_stats["building"] += 1
-            elif cls_id == 11:
                 rov_stats["diver"] += 1
 
             if threat_status == "HAZARD":
