@@ -57,8 +57,13 @@ def open_browser():
 def main():
     check_frontend_build()
     
-    # Buka browser otomatis di thread terpisah
-    threading.Thread(target=open_browser, daemon=True).start()
+    host = os.getenv("HOST", "0.0.0.0")
+    port = int(os.getenv("PORT", "8000"))
+    no_browser = os.getenv("NO_BROWSER", "0") == "1" or os.getenv("HEADLESS", "0") == "1"
+
+    # Buka browser otomatis di thread terpisah (jika tidak di headless environment)
+    if not no_browser:
+        threading.Thread(target=open_browser, daemon=True).start()
     
     try:
         import uvicorn
@@ -70,8 +75,8 @@ def main():
     # Jalankan FastAPI Uvicorn dengan auto-reload pada direktori backend
     uvicorn.run(
         "server.main:app",
-        host="0.0.0.0",
-        port=8000,
+        host=host,
+        port=port,
         reload=True,
         reload_dirs=[str(BASE_DIR / "server"), str(BASE_DIR / "core")],
         log_level="info"

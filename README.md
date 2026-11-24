@@ -64,26 +64,33 @@ projek/
 
 ---
 
-## 3. Taksonomi Terpadu 12 Kelas (ROV & Drone)
+## 3. Taksonomi Terpadu 8 Kelas (ROV & Drone)
 
 | ID | Nama Kelas | Domain | Status Ancaman | Referensi Lebar ($W_{real}$) | Mode Cockpit |
 |:---:|---|:---:|:---:|:---:|:---:|
 | `0` | `soldier` | Land | **HAZARD (Merah)** | 0.5 m | Drone |
 | `1` | `military_vehicle` | Land | **NEUTRAL (Kuning/Oranye)** | 3.2 m | Drone |
 | `2` | `civilian` | Land | **NEUTRAL (Hijau)** | 0.5 m | Drone |
-| `3` | `ship` | Water | **HAZARD (Merah)** | 25.0 m | ROV |
+| `3` | `tree` | Land | **NEUTRAL (Hijau Hutan)** | 3.0 m | Drone |
 | `4` | `submarine` | Water | **HAZARD (Merah)** | 12.0 m | ROV |
 | `5` | `marine_life` | Water | **NEUTRAL (Hijau)** | 0.4 m | ROV |
 | `6` | `coral_reef` | Water | **NEUTRAL (Hijau)** | 1.5 m | ROV |
-| `7` | `rov` | Water | **NEUTRAL (Cyan)** | 0.8 m | ROV |
-| `8` | `fpv_drone` | Land/Air | **NEUTRAL (Hijau)** | 0.4 m | Drone |
-| `9` | `tree` | Land | **NEUTRAL (Hijau Hutan)** | 3.0 m | Drone |
-| `10` | `building` | Land | **NEUTRAL (Abu-abu)** | 10.0 m | Drone |
-| `11` | `diver` | Water | **NEUTRAL (Biru Langit)** | 0.6 m | ROV |
+| `7` | `diver` | Water | **NEUTRAL (Biru Langit)** | 0.6 m | ROV |
 
 ---
 
-## 4. Modul Antarmuka GCS
+## 4. Deployment VPS & CI/CD Pipeline
+
+Sistem ini telah dilengkapi dengan kontainerisasi Docker Multi-Stage dan alur otomasi CI/CD GitHub Actions:
+
+* **Container Docker:** Menjalankan frontend React Vite dan backend FastAPI dalam satu container port tunggal (`8000:8000`).
+* **CI (Continuous Integration):** Otomatis menguji build frontend Vite, seluruh 8 unit modul CV, dan integrasi API FastAPI pada setiap commit branch `main` dan `Dev2`.
+* **CD (Continuous Deployment):** Otomatis melakukan pull dan redeploy zero-downtime ke VPS melalui koneksi SSH saat push ke branch `main`.
+* **Panduan Lengkap VPS:** Silakan baca [docs/DEPLOYMENT-GUIDE.md](file:///docs/DEPLOYMENT-GUIDE.md) untuk panduan satu klik (`deploy/setup_vps.sh`), konfigurasi reverse proxy Nginx, dan SSL HTTPS gratis.
+
+---
+
+## 5. Modul Antarmuka GCS
 
 1. **Live Cockpit:**
    * Tata letak split-screen workstation (70% area video bersih, 30% panel kontrol terstruktur).

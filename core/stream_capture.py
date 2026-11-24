@@ -34,7 +34,10 @@ class StreamCapture:
         self.cap: Optional[cv2.VideoCapture] = None
         self.sct: Optional[Any] = None
         if MSS_AVAILABLE:
-            self.sct = mss.mss()
+            try:
+                self.sct = mss.mss()
+            except Exception:
+                self.sct = None
 
     def open_camera(self, camera_index: int = 0) -> bool:
         """Membuka koneksi direct camera USB / webcam."""

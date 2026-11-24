@@ -1,0 +1,140 @@
+name: CI/CD Pipeline — Tactical AI GCS
+
+on:
+  push:
+    branches:
+      - main
+      - Dev2
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ============================================================================
+  # 1. CI: Pengujian Modul, Integrasi API & Build Frontend
+  # ============================================================================
+  test-and-verify:
+    name: Unit & Integration Verification
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package.json'
+
+      - name: Build Single-Port React Frontend (Vite)
+        run: |
+          cd frontend
+          npm install
+          npm run build
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install System Libraries (Headless OpenCV & FFmpeg)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libgl1 libglib2.0-0 ffmpeg
+
+      - name: Install Python Dependencies (PyTorch CPU Wheel for Fast CI)
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt
+
+      - name: Run Verification Harness (8/8 Modules)
+        run: |
+          python scripts/verify_all_modules.py
+
+      - name: Run Tactical GCS API & Single-Port Serving Tests
+        run: |
+          python scripts/test_gcs_api.py
+
+  # ============================================================================
+  # 2. CI: Pengujian Build Docker Multi-Stage Container
+  # ============================================================================
+  docker-build-test:
+    name: Docker Multi-Stage Build Check
+    needs: test-and-verify
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker Image (Dry Run)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: tactical-gcs:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ============================================================================
+  # 3. CD: Otomasi Deployment ke VPS via SSH
+  # ============================================================================
+  deploy-to-vps:
+    name: Deploy to Production VPS
+    needs: [test-and-verify, docker-build-test]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check Secrets & Execute Deployment
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USERNAME }}
+          VPS_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          if [ -z "$VPS_HOST" ] || [ -z "$VPS_USER" ] || [ -z "$VPS_KEY" ]; then
+            echo "=============================================================================="
+            echo "ℹ️  CD DEPLOYMENT NOTICE:"
+            echo "GitHub Secrets (VPS_HOST, VPS_USERNAME, VPS_SSH_KEY) belum dikonfigurasi."
+            echo "Semua pengujian CI & build container telah LOLOS 100%!"
+            echo "Untuk mengaktifkan auto-deploy ke VPS, tambahkan secrets di:"
+            echo "Repo Settings -> Secrets and variables -> Actions."
+            echo "Lihat panduan lengkap di: docs/DEPLOYMENT-GUIDE.md"
+            echo "=============================================================================="
+            exit 0
+          fi
+
+      - name: Deploying via SSH
+        if: ${{ env.VPS_HOST != '' && env.VPS_USER != '' && env.VPS_KEY != '' }}
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script: |
+            PROJECT_DIR="${{ secrets.VPS_PROJECT_DIR || '/opt/tactical-gcs' }}"
+            if [ -d "$PROJECT_DIR" ]; then
+              cd "$PROJECT_DIR"
+              git pull origin main
+              docker compose up -d --build --remove-orphans
+              sleep 5
+              curl -f http://localhost:8000/api/system/health || exit 1
+              echo "✅ Auto-deployment Tactical GCS Berhasil!"
+            else
+              echo "Direktori $PROJECT_DIR tidak ditemukan di VPS. Silakan clone terlebih dahulu."
+              exit 1
+            fi
