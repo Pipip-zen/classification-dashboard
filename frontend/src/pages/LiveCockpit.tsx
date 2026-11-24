@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Play, 
   Square, 
@@ -130,6 +130,16 @@ export const CircularCompassDial: React.FC<CircularCompassDialProps> = ({ headin
   const innerRadius = 40;
   const ticks = [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330];
 
+  const prevHeadingRef = useRef<number>(heading);
+  const unwrappedRotationRef = useRef<number>(-heading);
+
+  // Shortest angular difference between current heading and previous heading [-180, +180]
+  const rawDiff = heading - prevHeadingRef.current;
+  const shortestDelta = ((rawDiff + 540) % 360) - 180;
+
+  unwrappedRotationRef.current -= shortestDelta;
+  prevHeadingRef.current = heading;
+
   return (
     <div className="relative w-[110px] h-[110px] bg-slate-950/85 backdrop-blur-md border border-slate-700/60 rounded-full shadow-2xl flex items-center justify-center pointer-events-none select-none">
       {/* Top Fixed Heading Pointer Index */}
@@ -142,7 +152,7 @@ export const CircularCompassDial: React.FC<CircularCompassDialProps> = ({ headin
         className="w-full h-full"
         viewBox={`0 0 ${size} ${size}`}
         style={{
-          transform: `rotate(${-heading}deg)`,
+          transform: `rotate(${unwrappedRotationRef.current}deg)`,
           transition: 'transform 0.15s ease-out'
         }}
       >

@@ -75,11 +75,13 @@ class OrientationEstimator:
         return self.current_heading_deg
 
     def reset(self) -> None:
-        """Mereset riwayat tracking saat pergantian stream atau video."""
+        """Mereset riwayat tracking saat pergantian stream atau video ke 000.0 derajat."""
+        self.current_heading_deg = 0.0
         self.prev_gray = None
         self.prev_pts = None
         self.last_timestamp = time.time()
         self.turn_rate_dps = 0.0
+        self.is_calibrated = False
 
     @classmethod
     def deg_to_cardinal(cls, deg: float) -> str:

@@ -142,6 +142,9 @@ class StreamWorker:
                     state.source_param = source_param
                     state.stream_active = True
                     state.orientation_estimator.reset()
+                    state.latest_telemetry["heading_deg"] = 0.0
+                    state.latest_telemetry["cardinal"] = "N"
+                    state.latest_telemetry["turn_rate_dps"] = 0.0
                     self.running = True
                     self.worker_thread = threading.Thread(target=self._run_loop, daemon=True)
                     self.worker_thread.start()
