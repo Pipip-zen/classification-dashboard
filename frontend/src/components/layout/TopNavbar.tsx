@@ -6,7 +6,6 @@ import {
   Cpu,
   Activity,
   LogOut,
-  Eye,
 } from 'lucide-react';
 import type { AuthUser, ChannelId, ChannelStatusSummary, TelemetryData } from '../../types';
 
@@ -72,13 +71,8 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
         </div>
       </div>
 
-      {/* Navigation: Operator boleh Live + Analysis + Dataset; Spectator khusus Monitor */}
-      {isSpectator ? (
-        <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded bg-slate-950 border border-slate-800 text-xs font-mono text-amber-300">
-          <Eye className="w-3.5 h-3.5" />
-          <span>Spectator Monitor Mode</span>
-        </div>
-      ) : (
+      {/* Navigation: Operator boleh Live + Analysis + Dataset; Spectator fokus pada monitor */}
+      {!isSpectator && (
         <nav className="flex items-center space-x-1 overflow-x-auto py-0.5 px-1 scrollbar-none shrink-0">
           {operatorTabs.map((tab) => {
             const Icon = tab.icon;
