@@ -95,7 +95,7 @@ jobs:
   deploy-to-vps:
     name: Deploy to Production VPS
     needs: [test-and-verify, docker-build-test]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
 
     steps:
@@ -131,7 +131,8 @@ jobs:
             PROJECT_DIR="${{ secrets.VPS_PROJECT_DIR || '/opt/tactical-gcs' }}"
             if [ -d "$PROJECT_DIR" ]; then
               cd "$PROJECT_DIR"
-              git pull origin main
+              git fetch origin main
+              git reset --hard origin/main
               if docker compose version >/dev/null 2>&1; then
                 docker compose up -d --build --remove-orphans
               else

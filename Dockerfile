@@ -38,9 +38,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Install dependensi Python
+# Install PyTorch CPU wheel lebih dulu agar Docker tidak mengunduh paket CUDA ~3-4 GB
+ARG TORCH_INDEX_URL=https://download.pytorch.org/whl/cpu
 COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir torch torchvision --index-url ${TORCH_INDEX_URL} && \
+    pip install --no-cache-dir -r requirements.txt
 
 # Copy source code backend, model bobot AI, dan dataset testbench
 COPY core/ ./core/
