@@ -14,11 +14,16 @@ import tempfile
 import numpy as np
 from pathlib import Path
 from typing import Optional, List, Dict, Any
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends
 
 from server.state import state
+from server.auth import require_operator_role
 
-router = APIRouter(prefix="/api/analysis", tags=["Media Analysis"])
+router = APIRouter(
+    prefix="/api/analysis",
+    tags=["Media Analysis"],
+    dependencies=[Depends(require_operator_role)],
+)
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 

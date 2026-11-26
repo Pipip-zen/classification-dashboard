@@ -10,11 +10,16 @@ import json
 import base64
 import numpy as np
 from typing import Optional
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends
 
 from core.inpainter import ImageInpainter
+from server.auth import require_operator_role
 
-router = APIRouter(prefix="/api/inpainting", tags=["Image Inpainting"])
+router = APIRouter(
+    prefix="/api/inpainting",
+    tags=["Image Inpainting"],
+    dependencies=[Depends(require_operator_role)],
+)
 
 
 @router.post("/inpaint")

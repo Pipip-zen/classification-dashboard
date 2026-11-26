@@ -11,6 +11,14 @@ services:
       - HOST=0.0.0.0
       - PORT=8000
       - NO_BROWSER=1
+      - OPERATOR_PIN=${OPERATOR_PIN:-1234}
+      - AUTH_SECRET=${AUTH_SECRET:-vanguard-tactical-gcs-dev-secret-change-me}
+      - DRONE_USERNAME=${DRONE_USERNAME:-drone}
+      - DRONE_PASSWORD=${DRONE_PASSWORD:-drone123}
+      - ROV_USERNAME=${ROV_USERNAME:-rov}
+      - ROV_PASSWORD=${ROV_PASSWORD:-rov123}
+      - SPECTATOR_USERNAME=${SPECTATOR_USERNAME:-spectator}
+      - SPECTATOR_PASSWORD=${SPECTATOR_PASSWORD:-spectator123}
     volumes:
       - ./models:/app/models
       - ./data:/app/data

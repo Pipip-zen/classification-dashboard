@@ -10,13 +10,20 @@ echo "🔄 Menarik update terbaru dari GitHub (branch: main)..."
 git pull origin main
 
 echo "🏗️ Membangun ulang dan me-restart container Tactical GCS..."
-docker compose up -d --build --remove-orphans
+if docker compose version >/dev/null 2>&1; then
+    docker compose up -d --build --remove-orphans
+else
+    docker-compose up -d --build --remove-orphans
+fi
 
 echo "🏥 Memeriksa status kesehatan sistem..."
-sleep 5
-curl -f http://localhost:8000/api/system/health || {
-    echo "⚠️ Peringatan: Health check gagal. Silakan periksa log dengan 'docker compose logs -f'."
-    exit 1
-}
+for i in $(seq 1 12); do
+    if curl -fsS http://localhost:8000/api/system/health >/dev/null 2>&1; then
+        echo "✅ Update selesai! Tactical GCS beroperasi normal."
+        exit 0
+    fi
+    sleep 3
+done
 
-echo "✅ Update selesai! Tactical GCS beroperasi normal."
+echo "⚠️ Peringatan: Health check gagal setelah 36 detik. Silakan periksa log container."
+exit 1

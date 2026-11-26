@@ -99,26 +99,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check Secrets & Execute Deployment
+      - name: Check Secrets & Set Deploy Flag
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USERNAME }}
           VPS_KEY: ${{ secrets.VPS_SSH_KEY }}
         run: |
           if [ -z "$VPS_HOST" ] || [ -z "$VPS_USER" ] || [ -z "$VPS_KEY" ]; then
+            echo "HAS_VPS_SECRETS=false" >> "$GITHUB_ENV"
             echo "=============================================================================="
             echo "ℹ️  CD DEPLOYMENT NOTICE:"
             echo "GitHub Secrets (VPS_HOST, VPS_USERNAME, VPS_SSH_KEY) belum dikonfigurasi."
-            echo "Semua pengujian CI & build container telah LOLOS 100%!"
             echo "Untuk mengaktifkan auto-deploy ke VPS, tambahkan secrets di:"
             echo "Repo Settings -> Secrets and variables -> Actions."
-            echo "Lihat panduan lengkap di: docs/DEPLOYMENT-GUIDE.md"
             echo "=============================================================================="
-            exit 0
+          else
+            echo "HAS_VPS_SECRETS=true" >> "$GITHUB_ENV"
+            echo "VPS secrets ditemukan. Melanjutkan deploy ke server..."
           fi
 
       - name: Deploying via SSH
-        if: ${{ env.VPS_HOST != '' && env.VPS_USER != '' && env.VPS_KEY != '' }}
+        if: env.HAS_VPS_SECRETS == 'true'
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -126,14 +127,25 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
           script: |
+            set -e
             PROJECT_DIR="${{ secrets.VPS_PROJECT_DIR || '/opt/tactical-gcs' }}"
             if [ -d "$PROJECT_DIR" ]; then
               cd "$PROJECT_DIR"
               git pull origin main
-              docker compose up -d --build --remove-orphans
-              sleep 5
-              curl -f http://localhost:8000/api/system/health || exit 1
-              echo "✅ Auto-deployment Tactical GCS Berhasil!"
+              if docker compose version >/dev/null 2>&1; then
+                docker compose up -d --build --remove-orphans
+              else
+                docker-compose up -d --build --remove-orphans
+              fi
+              for i in $(seq 1 12); do
+                if curl -fsS http://localhost:8000/api/system/health >/dev/null 2>&1; then
+                  echo "✅ Auto-deployment Tactical GCS Berhasil!"
+                  exit 0
+                fi
+                sleep 3
+              done
+              echo "❌ Health check timeout setelah 36 detik."
+              exit 1
             else
               echo "Direktori $PROJECT_DIR tidak ditemukan di VPS. Silakan clone terlebih dahulu."
               exit 1

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Upload, Download, Eraser, Paintbrush } from 'lucide-react';
+import { authFetch } from '../utils/auth';
 
 export const InpaintingView: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -122,7 +123,7 @@ export const InpaintingView: React.FC = () => {
       formData.append('radius', radius.toString());
 
       try {
-        const res = await fetch('/api/inpainting/inpaint', {
+        const res = await authFetch('/api/inpainting/inpaint', {
           method: 'POST',
           body: formData,
         });
@@ -132,7 +133,7 @@ export const InpaintingView: React.FC = () => {
         } else {
           alert(data.detail || "Gagal memproses inpainting.");
         }
-      } catch (e) {
+      } catch {
         alert("Gagal menghubungi server backend.");
       } finally {
         setLoading(false);

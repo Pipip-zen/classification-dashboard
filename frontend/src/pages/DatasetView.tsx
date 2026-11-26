@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle } from 'lucide-react';
+import { authFetch } from '../utils/auth';
 
 export const DatasetView: React.FC = () => {
   const [classes, setClasses] = useState<any[]>([]);
   const [summary, setSummary] = useState<any | null>(null);
 
   useEffect(() => {
-    fetch('/api/dataset/taxonomy')
+    authFetch('/api/dataset/taxonomy')
       .then(res => res.json())
       .then(data => {
         if (data.classes) setClasses(data.classes);
       })
       .catch(err => console.error("Error fetching taxonomy:", err));
 
-    fetch('/api/dataset/summary')
+    authFetch('/api/dataset/summary')
       .then(res => res.json())
       .then(data => setSummary(data))
       .catch(err => console.error("Error fetching dataset summary:", err));

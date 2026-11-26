@@ -8,11 +8,16 @@ import cv2
 import base64
 import numpy as np
 from typing import List, Optional
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends
 
 from core.stitcher import ImageStitcher
+from server.auth import require_operator_role
 
-router = APIRouter(prefix="/api/stitching", tags=["Image Stitching"])
+router = APIRouter(
+    prefix="/api/stitching",
+    tags=["Image Stitching"],
+    dependencies=[Depends(require_operator_role)],
+)
 
 
 @router.post("/stitch")

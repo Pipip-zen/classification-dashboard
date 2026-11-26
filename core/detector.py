@@ -12,6 +12,7 @@ Deskripsi:
 """
 
 import cv2
+import threading
 import numpy as np
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple
@@ -68,6 +69,7 @@ class TacticalDetector:
 
         self.model = None
         self.model_loaded = False
+        self._infer_lock = threading.Lock()
         self.tracker = TemporalTracker(iou_threshold=0.35, max_age=15)
 
         if model_path:
@@ -101,30 +103,19 @@ class TacticalDetector:
         draw_hud_reticle: bool = True,
         enable_clahe: bool = False,
         show_labels: bool = True,
-        enable_dusk: bool = False
+        enable_dusk: bool = False,
+        tracker: Optional[TemporalTracker] = None,
+        conf_threshold: Optional[float] = None
     ) -> Dict[str, Any]:
         """
-        Melakukan inferensi taktis berfokus murni pada Image Classification & Localization:
-        - mode='rov': Menampilkan target danau/bawah air (Submarine, Ikan, Karang, ROV, Kapal, Diver)
-        - mode='drone': Menampilkan target POV umum (Soldier, Civilian, Vehicle, Kapal, Tree, Building, FPV)
-        - enable_clahe: Toggle real-time underwater CLAHE enhancer (sesuai kebutuhan video)
-        - enable_dusk: Toggle real-time aerial dusk / low-light enhancer (Gamma + CLAHE untuk drone sore)
-        - show_labels: Toggle visibilitas teks label untuk layar bersih (clean HUD)
+        Melakukan inferensi taktis berfokus murni pada Image Classification & Localization.
+        Mendukung tracker dan conf_threshold per-channel agar aman dipakai paralel.
         """
-        # Hot-reloading jika file bobot model di disk diperbarui
-        if self.model_path:
-            p = Path(self.model_path)
-            if p.exists() and self._last_mtime is not None:
-                try:
-                    curr_mtime = p.stat().st_mtime
-                    if curr_mtime > self._last_mtime:
-                        self.load_model(self.model_path)
-                except Exception:
-                    pass
-
         annotated_frame = frame.copy()
         h, w = frame.shape[:2]
         detections: List[Dict[str, Any]] = []
+        active_conf = float(conf_threshold) if conf_threshold is not None else self.conf_threshold
+        active_tracker = tracker if tracker is not None else self.tracker
 
         drone_stats = {
             "soldier": 0,
@@ -145,42 +136,50 @@ class TacticalDetector:
             infer_frame = frame
             annotated_frame = frame.copy()
 
-        h, w = frame.shape[:2]
-        detections: List[Dict[str, Any]] = []
-
-        if not self.model_loaded or self.model is None:
-            cv2.putText(
-                annotated_frame,
-                "TACTICAL AI CORE OFFLINE",
-                (40, 50),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                1.0,
-                (0, 0, 255),
-                2
-            )
-            return {
-                "annotated_frame": annotated_frame,
-                "detections": [],
-                "environment": "Offline",
-                "hazard_count": 0,
-                "neutral_count": 0,
-                "drone_stats": drone_stats,
-                "rov_stats": rov_stats
-            }
-
         # Frame HUD Taktis di Sudut Layar
         if draw_hud_reticle:
             self._draw_tactical_hud_overlay(annotated_frame, mode)
 
-        # Jalankan inferensi YOLO dengan Class-Agnostic NMS untuk mencegah tumpukan box multi-kelas
-        results = self.model.predict(
-            source=infer_frame,
-            conf=min(self.conf_threshold, 0.15),
-            iou=0.35,
-            agnostic_nms=True,
-            device=self.device,
-            verbose=False
-        )
+        # Kunci akses model agar inferensi antar-channel dan hot-reload tetap thread-safe
+        with self._infer_lock:
+            if self.model_path:
+                p = Path(self.model_path)
+                if p.exists() and self._last_mtime is not None:
+                    try:
+                        curr_mtime = p.stat().st_mtime
+                        if curr_mtime > self._last_mtime:
+                            self.load_model(self.model_path)
+                    except Exception:
+                        pass
+
+            if not self.model_loaded or self.model is None:
+                cv2.putText(
+                    annotated_frame,
+                    "TACTICAL AI CORE OFFLINE",
+                    (40, 50),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    1.0,
+                    (0, 0, 255),
+                    2
+                )
+                return {
+                    "annotated_frame": annotated_frame,
+                    "detections": [],
+                    "environment": "Offline",
+                    "hazard_count": 0,
+                    "neutral_count": 0,
+                    "drone_stats": drone_stats,
+                    "rov_stats": rov_stats
+                }
+
+            results = self.model.predict(
+                source=infer_frame,
+                conf=min(active_conf, 0.15),
+                iou=0.35,
+                agnostic_nms=True,
+                device=self.device,
+                verbose=False
+            )
 
         detected_class_ids = []
         hazard_count = 0
@@ -194,13 +193,11 @@ class TacticalDetector:
                 conf = float(box.conf[0].cpu().numpy())
                 cls_id = int(box.cls[0].cpu().numpy())
 
-                # FILTER 1: FILTER BERDASARKAN MODE OPERASI (ROV vs DRONE)
                 if not ThreatEvaluator.is_class_allowed_for_mode(cls_id, mode):
                     continue
 
-                # FILTER 2: SMART CONFIDENCE FLOOR (Proteksi Cerdas Noise Ambang Rendah)
                 min_floor = self.CLASS_CONFIDENCE_FLOOR.get(cls_id, 0.20)
-                effective_conf = max(self.conf_threshold, min_floor)
+                effective_conf = max(active_conf, min_floor)
                 if conf < effective_conf:
                     continue
 
@@ -245,9 +242,8 @@ class TacticalDetector:
                 })
 
         # TEMPORAL TRACKING & CLASS SMOOTHING (Mencegah Civilian <-> Soldier flickering)
-        smoothed_candidates = self.tracker.update(raw_candidates)
+        smoothed_candidates = active_tracker.update(raw_candidates)
 
-        render_queue = []
         for cand in smoothed_candidates:
             cls_id = cand["class_id"]
             conf = cand["confidence"]
@@ -299,20 +295,8 @@ class TacticalDetector:
                 "color_bgr": color_bgr
             }
             detections.append(det_item)
-            render_queue.append((x1, y1, x2, y2, color_bgr, display_name, conf))
 
-        # RENDER VISUAL ADAPTIF: Otomatis aktifkan compact_mode jika objek > 12 agar layar tidak tertutup
-        is_crowded = len(render_queue) > 12
-        for (x1, y1, x2, y2, color_bgr, display_name, conf) in render_queue:
-            self._draw_tactical_bbox(
-                annotated_frame,
-                x1, y1, x2, y2,
-                color_bgr,
-                display_name,
-                conf,
-                show_label=show_labels,
-                compact_mode=is_crowded
-            )
+        self._draw_detections_on_frame(annotated_frame, detections, show_labels=show_labels)
 
         env_domain, _ = ThreatEvaluator.determine_environment(detected_class_ids, mode=mode)
 
@@ -325,6 +309,52 @@ class TacticalDetector:
             "drone_stats": drone_stats,
             "rov_stats": rov_stats
         }
+
+    @classmethod
+    def _draw_detections_on_frame(cls, frame: np.ndarray, detections: List[Dict[str, Any]], show_labels: bool = True) -> None:
+        """Menggambar daftar bounding box pada frame target secara in-place."""
+        is_crowded = len(detections) > 12
+        for det in detections:
+            box = det.get("bbox") or det.get("box") or [0, 0, 0, 0]
+            x1, y1, x2, y2 = int(box[0]), int(box[1]), int(box[2]), int(box[3])
+            color_bgr = tuple(det.get("color_bgr") or ThreatEvaluator.get_info_by_class_id(det.get("class_id", 0))["color_bgr"])
+            display_name = det.get("display_name", "")
+            conf = float(det.get("confidence", 0.0))
+            cls._draw_tactical_bbox(
+                frame,
+                x1, y1, x2, y2,
+                color_bgr,
+                display_name,
+                conf,
+                show_label=show_labels,
+                compact_mode=is_crowded
+            )
+
+    @classmethod
+    def render_overlay(
+        cls,
+        frame: np.ndarray,
+        detections: List[Dict[str, Any]],
+        mode: str = "drone",
+        draw_hud_reticle: bool = True,
+        show_labels: bool = True,
+        enable_clahe: bool = False,
+        enable_dusk: bool = False
+    ) -> np.ndarray:
+        """Menggambar ulang enhancer, HUD reticle, dan cached bounding boxes ke frame terbaru tanpa inference."""
+        if enable_clahe and mode.lower() in ["rov", "all"]:
+            out_frame = cls.enhance_underwater_frame(frame)
+        elif enable_dusk and mode.lower() in ["drone", "all"]:
+            out_frame = cls.enhance_dusk_frame(frame)
+        else:
+            out_frame = frame.copy()
+
+        if draw_hud_reticle:
+            cls._draw_tactical_hud_overlay(out_frame, mode)
+
+        if detections:
+            cls._draw_detections_on_frame(out_frame, detections, show_labels=show_labels)
+        return out_frame
 
     @staticmethod
     def _draw_tactical_bbox(frame, x1, y1, x2, y2, color, label, conf, show_label=True, compact_mode=False):

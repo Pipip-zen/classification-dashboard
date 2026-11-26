@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { authFetch } from '../utils/auth';
 import { 
   Upload, 
   Download, 
@@ -41,7 +42,7 @@ export const MediaAnalysis: React.FC = () => {
 
   // Fetch sample media from server on mount
   useEffect(() => {
-    fetch('/api/analysis/samples')
+    authFetch('/api/analysis/samples')
       .then(res => res.json())
       .then(data => {
         if (data.images || data.videos) {
@@ -98,7 +99,7 @@ export const MediaAnalysis: React.FC = () => {
     formData.append('dusk_enhancer', duskEnhancer ? 'true' : 'false');
 
     try {
-      const res = await fetch('/api/analysis/image', {
+      const res = await authFetch('/api/analysis/image', {
         method: 'POST',
         body: formData,
       });
@@ -136,7 +137,7 @@ export const MediaAnalysis: React.FC = () => {
     formData.append('max_frames', '250');
 
     try {
-      const res = await fetch('/api/analysis/video', {
+      const res = await authFetch('/api/analysis/video', {
         method: 'POST',
         body: formData,
       });

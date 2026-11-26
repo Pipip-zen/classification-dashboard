@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Upload, Download, CheckCircle, AlertTriangle, Image as ImageIcon } from 'lucide-react';
+import { authFetch } from '../utils/auth';
 
 export const StitchingView: React.FC = () => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -29,13 +30,13 @@ export const StitchingView: React.FC = () => {
     formData.append('crop_borders', cropBorders ? 'true' : 'false');
 
     try {
-      const res = await fetch('/api/stitching/stitch', {
+      const res = await authFetch('/api/stitching/stitch', {
         method: 'POST',
         body: formData,
       });
       const data = await res.json();
       setResult(data);
-    } catch (e) {
+    } catch {
       alert("Gagal menghubungi server backend.");
     } finally {
       setLoading(false);

@@ -6,11 +6,16 @@ Deskripsi:
 
 import yaml
 from pathlib import Path
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 from core.threat_evaluator import ThreatEvaluator
+from server.auth import require_operator_role
 
-router = APIRouter(prefix="/api/dataset", tags=["Dataset & Taxonomy"])
+router = APIRouter(
+    prefix="/api/dataset",
+    tags=["Dataset & Taxonomy"],
+    dependencies=[Depends(require_operator_role)],
+)
 
 
 @router.get("/taxonomy")
